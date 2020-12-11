@@ -21,11 +21,12 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install pylint
           python -m pip install poetry
+          poetry config virtualenvs.create false
           poetry install -v
       - name: Run pylint
         run: pylint pipen_annotate
       - name: Test with pytest
-        run: poetry run pytest tests/ --junitxml=junit/test-results-${{ matrix.python-version }}.xml
+        run: pytest tests/ --junitxml=junit/test-results-${{ matrix.python-version }}.xml
       - name: Upload pytest test results
         uses: actions/upload-artifact@v2
         with:
