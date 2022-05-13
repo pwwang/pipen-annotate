@@ -1,5 +1,6 @@
 import pytest
 
+from pardoc.parsed import ParsedPara
 from pipen import Proc
 from pipen_annotate import *
 
@@ -8,7 +9,13 @@ def test_basic():
     class Process1(Proc):
         ...
 
-    assert Process1.annotated == {}
+    assert Process1.annotated == {
+        'args': None,
+        'input': None,
+        'long': [],
+        'output': None,
+        'short': ParsedPara(lines=['Undescribed process.']),
+    }
 
 def test_summary():
     @annotate
@@ -61,7 +68,7 @@ def test_input():
                 a: An input
             """
             desc = "abc"
-            input_keys = 'a, b'
+            input = 'a, b'
 
     assert Process1.annotated.input.a.name == 'a'
     assert Process1.annotated.input.a.type == 'var'
@@ -106,15 +113,16 @@ def test_output():
     assert Process2.annotated.output == {}
 
 def test_args():
-    @annotate
-    class Process1(Proc):
-        """long
+    with pytest.warns(AnnotateMissingWarning):
+        @annotate
+        class Process1(Proc):
+            """long
 
-        Args:
-            a: An arg
-                More
-        """
-        args = {'a': 1, 'b': 2}
+            Args:
+                a: An arg
+                    More
+            """
+            args = {'a': 1, 'b': 2}
 
     assert Process1.annotated.args.a.name == 'a'
     assert Process1.annotated.args.a.type == None

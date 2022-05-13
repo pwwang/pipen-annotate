@@ -1,6 +1,6 @@
 # pipen-annotate
 
-Use docstring to annotate pipen processes
+Use docstring to annotate [pipen](https://github.com/pwwang/pipen) processes
 
 ## Installation
 
@@ -30,7 +30,7 @@ class Process(Proc):
     Args:
         ncores: Number of cores
     """
-    input_keys = "infile:file, invar"
+    input = "infile:file, invar"
     output = "outfile:file:output.txt"
     args = {'ncores': 1}
 
