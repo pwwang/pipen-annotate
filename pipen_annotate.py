@@ -8,7 +8,7 @@ from pardoc import google_parser
 from pardoc.default import SUMMARY
 from pardoc.parsed import ParsedItem, ParsedPara, ParsedTodo, ParsedCode
 
-__version__ = "0.0.0"
+__version__ = "0.0.1"
 __all__ = ("annotate", "stringify", "AnnotateMissingWarning")
 
 
