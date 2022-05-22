@@ -60,6 +60,10 @@ def annotate(cls=None, *, warn_missing=True):
         annotate_output(cls, parsed.get("Output"), warn_missing)
         annotate_args(cls, parsed.get("Args"), warn_missing)
 
+        for key in parsed:
+            if key not in (SUMMARY, "Input", "Output", "Args"):
+                cls.annotated[key.lower()] = parsed[key]
+
         return cls
 
     return wrapper

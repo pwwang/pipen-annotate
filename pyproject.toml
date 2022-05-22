@@ -20,7 +20,7 @@ requires = ["poetry>=0.12"]
 build-backend = "poetry.masonry.api"
 
 [tool.pytest.ini_options]
-addopts = "-vv --cov-config=.coveragerc --cov=pipen_annotate --cov-report xml:.coverage.xml --cov-report term-missing"
+addopts = "-vv -p no:asyncio --cov-config=.coveragerc --cov=pipen_annotate --cov-report xml:.coverage.xml --cov-report term-missing"
 console_output_style = "progress"
 junit_family = "xunit1"
 filterwarnings = [
