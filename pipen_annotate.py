@@ -2,7 +2,6 @@
 import warnings
 
 from diot import Diot, OrderedDiot
-from diot.diot import OrderedDiot
 from pipen.defaults import ProcInputType
 from pardoc import google_parser
 from pardoc.default import SUMMARY
