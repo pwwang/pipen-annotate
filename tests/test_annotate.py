@@ -66,6 +66,15 @@ def test_annotate_with_leading_space():
     assert TestClass.annotated["Summary"]["long"] == ""
 
 
+def test_annotate_with_single_docline():
+    @annotate
+    class TestClass:
+        """Summary"""
+
+    assert TestClass.annotated["Summary"]["short"] == "Summary"
+    assert TestClass.annotated["Summary"]["long"] == ""
+
+
 def test_register_section():
     class TestSection(SectionItems):
         def parse(self):

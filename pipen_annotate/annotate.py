@@ -47,7 +47,11 @@ def annotate(cls: Type[Proc]):
     if docstring[0] in (" ", "\t"):
         docstring = textwrap.dedent(docstring)
     else:
-        first, rest = docstring.split("\n", 1)
+        parts = docstring.split("\n", 1)
+        if len(parts) == 1:
+            first, rest = parts[0], ""
+        else:
+            first, rest = parts
         docstring = f"{first}\n{textwrap.dedent(rest)}"
 
     section = sections.SectionSummary(cls)
