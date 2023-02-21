@@ -198,7 +198,10 @@ class SectionInput(SectionItems):
                 parsed[input_key].attrs["itype"] = input_type
 
             parsed[input_key].attrs["nargs"] = "+"
-            parsed[input_key].attrs["action"] = "append"
+            if input_type in (ProcInputType.FILES, ProcInputType.DIRS):
+                parsed[input_key].attrs["action"] = "append"
+            else:
+                parsed[input_key].attrs["action"] = "extend"
 
         return parsed
 

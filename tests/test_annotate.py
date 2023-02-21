@@ -14,6 +14,7 @@ def test_annotate():
 
         Input:
             infile: Input file
+            infiles: Input files
 
         Output:
             outfile: Output file
@@ -22,7 +23,7 @@ def test_annotate():
             arg1: help1
             arg2: help2
         """
-        input = "infile:file"
+        input = "infile:file, infiles:files"
         output = "outfile:file:{{in.infile | basename}}"
         envs = {"arg1": 1, "arg2": 2}
 
@@ -31,6 +32,12 @@ def test_annotate():
     assert annotated["Summary"]["long"] == ""
     assert annotated["Input"]["infile"]["help"] == "Input file"
     assert annotated["Input"]["infile"]["attrs"]["itype"] == "file"
+    assert annotated["Input"]["infile"]["attrs"]["action"] == "extend"
+    assert annotated["Input"]["infile"]["attrs"]["nargs"] == "+"
+    assert annotated["Input"]["infiles"]["help"] == "Input files"
+    assert annotated["Input"]["infiles"]["attrs"]["itype"] == "files"
+    assert annotated["Input"]["infiles"]["attrs"]["action"] == "append"
+    assert annotated["Input"]["infiles"]["attrs"]["nargs"] == "+"
     assert annotated["Output"]["outfile"]["help"] == "Output file"
     assert annotated["Output"]["outfile"]["attrs"]["otype"] == "file"
     assert annotated["Output"]["outfile"]["attrs"][
