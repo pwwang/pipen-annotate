@@ -5,12 +5,13 @@ Use docstring to annotate [pipen](https://github.com/pwwang/pipen) processes
 ## Installation
 
 ```shell
-pip install pipen-annotate
+pip install -U pipen-annotate
 ```
 
 ## Usage
 
 ```python
+from pprint import pprint
 from pipen import Proc
 from pipen_annotate import annotate
 
@@ -27,7 +28,7 @@ class Process(Proc):
     Output:
         outfile: The output file
 
-    Args:
+    Envs:
         ncores: Number of cores
     """
     input = "infile:file, invar"
@@ -36,22 +37,23 @@ class Process(Proc):
 
 print(Process.annotated)
 # prints:
-{'args': {'ncores': ParsedItem(name='ncores',
-                               type=None,
-                               desc='Number of cores',
-                               more=[ParsedPara(lines=['Default: 1'])])},
- 'input': {'infile': ParsedItem(name='infile',
-                                type='file',
-                                desc='An input file',
-                                more=[]),
-           'invar': ParsedItem(name='invar',
-                               type='var',
-                               desc='An input variable',
-                               more=[])},
- 'long': [ParsedPara(lines=['Long description'])],
- 'output': {'outfile': ParsedItem(name='outfile',
-                                  type='file',
-                                  desc='The output file',
-                                  more=[ParsedPara(lines=['Default: output.txt'])])},
- 'short': ParsedPara(lines=['Short description'])}
+{'Envs': {'ncores': {'attrs': OrderedDiot([('default', 1), ('atype', 'int')]),
+                     'help': 'Number of cores',
+                     'terms': OrderedDiot([])}},
+ 'Input': {'infile': {'attrs': {'action': 'append',
+                                'itype': 'file',
+                                'nargs': '+'},
+                      'help': 'An input file',
+                      'terms': OrderedDiot([])},
+           'invar': {'attrs': {'action': 'append',
+                               'itype': 'var',
+                               'nargs': '+'},
+                     'help': 'An input variable',
+                     'terms': OrderedDiot([])}},
+ 'Output': {'outfile': {'attrs': {'default': 'output.txt',
+                                  'otype': 'file'},
+                        'help': 'The output file',
+                        'terms': OrderedDiot([])}},
+ 'Summary': {'long': 'Long description\n',
+             'short': 'Short description'}}
 ```

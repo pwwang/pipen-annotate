@@ -1,6 +1,6 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from typing import List
+from typing import Any, List
 
 import re
 import textwrap
@@ -13,6 +13,18 @@ ITEM_LINE_REGEX = re.compile(
     r"(?P<name>^[\w-]+)\s*(?:\((?P<attrs>.+?)\))?:(?P<help>.+)?$"
 )
 ITEM_ATTR_REGEX = re.compile(r"(?P<name>[\w-]+)(?:\s*:\s*(?P<value>.+))?")
+
+
+def _is_iterable(obj: Any) -> bool:
+    """Check if an object is iterable.
+    """
+    try:
+        iter(obj)
+    except TypeError:
+        return False
+    if isinstance(obj, str):
+        return False
+    return True
 
 
 def _dedent(lines: List[str]) -> List[str]:
@@ -109,7 +121,18 @@ def _update_attrs_with_cls(
             _update_attrs_with_cls(parsed[key].terms, value, whole_key)
             continue
 
-        parsed[key].attrs["default"] = value
+        if "default" not in parsed[key].attrs:
+            parsed[key].attrs["default"] = value
+
+        if "atype" not in parsed[key].attrs:
+            if value is not None and not _is_iterable(value):
+                parsed[key].attrs["atype"] = type(value).__name__
+
+        if isinstance(value, list):
+            if "action" not in parsed[key].attrs:
+                parsed[key].attrs["action"] = "list"
+            if "nargs" not in parsed[key].attrs:
+                parsed[key].attrs["nargs"] = "+"
 
 
 class MissingAnnotationWarning(Warning):
@@ -173,6 +196,9 @@ class SectionInput(SectionItems):
                 )
             else:
                 parsed[input_key].attrs["itype"] = input_type
+
+            parsed[input_key].attrs["nargs"] = "+"
+            parsed[input_key].attrs["action"] = "append"
 
         return parsed
 

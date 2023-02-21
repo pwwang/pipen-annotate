@@ -8,6 +8,7 @@ from pipen_annotate.sections import (
     SectionOutput,
     SectionSummary,
     SectionText,
+    _is_iterable,
 )
 
 
@@ -172,7 +173,7 @@ def test_output_missing_annotation():
 
 def test_envs():
     class TestProc:
-        envs = {"a": 1, "b": {"c": 3, "d": 4, "e": {"f": 6}}}
+        envs = {"a": 1, "b": {"c": 3, "d": 4, "e": {"f": [6]}}}
 
     section = SectionEnvs(TestProc)
     section.consume("a: help1")
@@ -197,4 +198,14 @@ def test_envs():
     assert parsed["b"]["terms"]["d"]["attrs"]["default"] == 4
     assert parsed["b"]["terms"]["e"]["help"] == "help5"
     assert parsed["b"]["terms"]["e"]["terms"]["f"]["help"] == "help6"
-    assert parsed["b"]["terms"]["e"]["terms"]["f"]["attrs"]["default"] == 6
+    assert parsed["b"]["terms"]["e"]["terms"]["f"]["attrs"]["default"] == [6]
+    assert parsed["b"]["terms"]["e"]["terms"]["f"]["attrs"]["nargs"] == "+"
+    assert parsed["b"]["terms"]["e"]["terms"]["f"]["attrs"]["action"] == "list"
+
+
+def test_is_iterable():
+    assert _is_iterable(1) is False
+    assert _is_iterable("a") is False
+    assert _is_iterable([1, 2, 3]) is True
+    assert _is_iterable((1, 2, 3)) is True
+    assert _is_iterable({"a": 1, "b": 2}) is True
