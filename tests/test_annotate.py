@@ -1,135 +1,85 @@
-import pytest
+import pytest  # noqa: F401
 
-from pardoc.parsed import ParsedPara
-from pipen import Proc
-from pipen_annotate import *
+from pipen_annotate import annotate
+from pipen_annotate.annotate import SECTION_TYPES
+from pipen_annotate.sections import SectionItems
 
-def test_basic():
-    @annotate
-    class Process1(Proc):
-        ...
 
-    assert Process1.annotated == {
-        'args': None,
-        'input': None,
-        'long': [],
-        'output': None,
-        'short': ParsedPara(lines=['Undescribed process.']),
-    }
-
-def test_summary():
-    @annotate
-    class Process1(Proc):
-        """def
-
-        ghi
-        """
-        desc = "abc"
-
-    assert Process1.annotated.args is None
-    assert Process1.annotated.input is None
-    assert Process1.annotated.output is None
-    assert Process1.annotated.short.lines == ['abc']
-    assert Process1.annotated.long[0].lines == ['def']
-    assert Process1.annotated.long[1].lines == ['ghi']
+def test_annotate():
 
     @annotate
-    class Process2(Proc):
-        """
-        a
+    @annotate
+    class TestClass:
+        """Summary
+
         Input:
-            input: An input
-        """
-        desc = "abc"
-
-    assert Process2.annotated.args is None
-    assert len(Process2.annotated.input) == 0
-    assert Process2.annotated.output is None
-    assert Process2.annotated.short.lines == ['abc']
-    assert Process2.annotated.long[0].lines == ['a']
-
-
-    @annotate
-    class Process3(Proc):
-        """short
-
-        long
-        """
-    assert Process3.annotated.short.lines == ['short']
-    assert Process3.annotated.long[0].lines == ['long']
-
-def test_input():
-    with pytest.warns(AnnotateMissingWarning):
-        @annotate
-        class Process1(Proc):
-            """long
-
-            Input:
-                a: An input
-            """
-            desc = "abc"
-            input = 'a, b'
-
-    assert Process1.annotated.input.a.name == 'a'
-    assert Process1.annotated.input.a.type == 'var'
-    assert Process1.annotated.input.a.desc == 'An input'
-    assert Process1.annotated.input.a.more == []
-    assert Process1.annotated.input.b.name == 'b'
-    assert Process1.annotated.input.b.type == 'var'
-    assert Process1.annotated.input.b.desc == None
-    assert Process1.annotated.input.b.more == None
-
-def test_output():
-    with pytest.warns(AnnotateMissingWarning):
-        @annotate
-        class Process1(Proc):
-            """long
-
-            Output:
-                a: An output
-            """
-            desc = "abc"
-            output = 'a:file:1, b:2'
-
-    assert Process1.annotated.output.a.name == 'a'
-    assert Process1.annotated.output.a.type == 'file'
-    assert Process1.annotated.output.a.desc == 'An output'
-    assert Process1.annotated.output.a.more == [(['Default: 1'], )]
-    assert Process1.annotated.output.b.name == 'b'
-    assert Process1.annotated.output.b.type == 'var'
-    assert Process1.annotated.output.b.desc == 'Undescribed.'
-    assert Process1.annotated.output.b.more == [(['Default: 2'], )]
-
-    @annotate
-    class Process2(Proc):
-        """long
+            infile: Input file
 
         Output:
-            a: An output
+            outfile: Output file
+
+        Envs:
+            arg1: help1
+            arg2: help2
         """
-        desc = "abc"
-        output = '{{a:1}}'
+        input = "infile:file"
+        output = "outfile:file:{{in.infile | basename}}"
+        envs = {"arg1": 1, "arg2": 2}
 
-    assert Process2.annotated.output == {}
+    annotated = TestClass.annotated
+    assert annotated["Summary"]["short"] == "Summary"
+    assert annotated["Summary"]["long"] == ""
+    assert annotated["Input"]["infile"]["help"] == "Input file"
+    assert annotated["Input"]["infile"]["attrs"]["itype"] == "file"
+    assert annotated["Output"]["outfile"]["help"] == "Output file"
+    assert annotated["Output"]["outfile"]["attrs"]["otype"] == "file"
+    assert annotated["Output"]["outfile"]["attrs"][
+        "default"
+    ] == "{{in.infile | basename}}"
+    assert annotated["Envs"]["arg1"]["help"] == "help1"
+    assert annotated["Envs"]["arg2"]["help"] == "help2"
 
-def test_args():
-    with pytest.warns(AnnotateMissingWarning):
-        @annotate
-        class Process1(Proc):
-            """long
 
-            Args:
-                a: An arg
-                    More
-            """
-            args = {'a': 1, 'b': 2}
+def test_annotate_with_no_docstring():
+    @annotate
+    class TestClass:
+        ...
 
-    assert Process1.annotated.args.a.name == 'a'
-    assert Process1.annotated.args.a.type == None
-    assert Process1.annotated.args.a.desc == 'An arg'
-    assert Process1.annotated.args.a.more == [(['More'], ), (['Default: 1'], )]
+    assert TestClass.annotated == {}
 
-    assert stringify(Process1.annotated.args.a) == 'a: An arg\n  More\n\n  Default: 1'
-    assert stringify(None) == ''
-    assert stringify('None') == 'None'
-    assert stringify([Process1.annotated.args.a, Process1.annotated.args.b]) == 'a: An arg\n  More\n\n  Default: 1\nb: Undescribed.\n  Default: 2'
+
+def test_annotate_with_leading_space():
+    @annotate
+    class TestClass:
+        """\
+        Summary
+        """
+
+    assert TestClass.annotated["Summary"]["short"] == "Summary"
+    assert TestClass.annotated["Summary"]["long"] == ""
+
+
+def test_register_section():
+    class TestSection(SectionItems):
+        def parse(self):
+            parsed = super().parse()
+            for key, value in parsed.items():
+                value.attrs["test"] = True
+            return parsed
+
+    annotate.register_section("Test", TestSection)
+
+    @annotate
+    class TestClass:
+        """Summary
+
+        Test:
+            a: help1
+            b: help2
+        """
+
+    assert TestClass.annotated["Test"]["a"]["attrs"]["test"] is True
+    assert TestClass.annotated["Test"]["b"]["attrs"]["test"] is True
+
+    annotate.unregister_section("Test")
+    assert "Test" not in SECTION_TYPES
