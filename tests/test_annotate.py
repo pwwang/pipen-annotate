@@ -2,7 +2,7 @@ import pytest  # noqa: F401
 
 from pipen_annotate import annotate
 from pipen_annotate.annotate import SECTION_TYPES
-from pipen_annotate.sections import SectionItems
+from pipen_annotate.sections import MissingAnnotationWarning, SectionItems
 
 
 def test_annotate():
@@ -56,20 +56,28 @@ def test_annotate_with_no_docstring():
 
 
 def test_annotate_with_leading_space():
-    @annotate
-    class TestClass:
-        """\
-        Summary
-        """
+    with pytest.warns(MissingAnnotationWarning):
+        @annotate
+        class TestClass:
+            """\
+            Summary
+            """
+            input = "infile:file"
+            output = "outfile:file:{{in.infile | basename}}"
+            envs = {"arg1": 1, "arg2": 2}
 
     assert TestClass.annotated["Summary"]["short"] == "Summary"
     assert TestClass.annotated["Summary"]["long"] == ""
 
 
 def test_annotate_with_single_docline():
-    @annotate
-    class TestClass:
-        """Summary"""
+    with pytest.warns(MissingAnnotationWarning):
+        @annotate
+        class TestClass:
+            """Summary"""
+            input = "infile:file"
+            output = "outfile:file:{{in.infile | basename}}"
+            envs = {"arg1": 1, "arg2": 2}
 
     assert TestClass.annotated["Summary"]["short"] == "Summary"
     assert TestClass.annotated["Summary"]["long"] == ""
@@ -85,14 +93,18 @@ def test_register_section():
 
     annotate.register_section("Test", TestSection)
 
-    @annotate
-    class TestClass:
-        """Summary
+    with pytest.warns(MissingAnnotationWarning):
+        @annotate
+        class TestClass:
+            """Summary
 
-        Test:
-            a: help1
-            b: help2
-        """
+            Test:
+                a: help1
+                b: help2
+            """
+            input = "infile:file"
+            output = "outfile:file:{{in.infile | basename}}"
+            envs = {"arg1": 1, "arg2": 2}
 
     assert TestClass.annotated["Test"]["a"]["attrs"]["test"] is True
     assert TestClass.annotated["Test"]["b"]["attrs"]["test"] is True

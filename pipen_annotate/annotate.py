@@ -75,6 +75,13 @@ def annotate(cls: Type[Proc]):
 
     cls.annotated[section_name] = section.parse()
 
+    if "Input" not in cls.annotated:
+        cls.annotated.Input = sections.SectionInput(cls).parse()
+    if "Output" not in cls.annotated:
+        cls.annotated.Output = sections.SectionOutput(cls).parse()
+    if "Envs" not in cls.annotated:
+        cls.annotated.Envs = sections.SectionEnvs(cls).parse()
+
     return cls
 
 
