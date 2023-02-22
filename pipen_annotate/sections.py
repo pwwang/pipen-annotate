@@ -103,10 +103,11 @@ def _parse_one_output(out: str) -> List[str] | None:
 
 def _update_attrs_with_cls(
     parsed: Diot,
-    envs: dict,
+    envs: dict | None,
     prev_key: str | None = None,
 ) -> None:
     """Update the attrs of parsed terms with the class envs."""
+    envs = envs or {}
     for key, value in envs.items():
         whole_key = f"{prev_key}.{key}" if prev_key else key
 
