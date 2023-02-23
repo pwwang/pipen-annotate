@@ -210,8 +210,11 @@ class SectionInput(SectionItems):
 class SectionOutput(SectionItems):
 
     def parse(self) -> str | Diot | List[str]:
-        parsed = _parse_terms(self._lines)
         output = self._cls.output
+        if not output:
+            return Diot()
+
+        parsed = _parse_terms(self._lines)
 
         if not isinstance(output, (list, tuple)):
             output = [out.strip() for out in output.split(",")]

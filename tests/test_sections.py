@@ -171,6 +171,14 @@ def test_output_missing_annotation():
         section.parse()
 
 
+def test_output_missing():
+    class TestProc:
+        output = None
+
+    section = SectionOutput(TestProc)
+    assert section.parse() == {}
+
+
 def test_envs():
     class TestProc:
         envs = {"a": 1, "b": {"c": 3, "d": 4, "e": {"f": [6]}}}
