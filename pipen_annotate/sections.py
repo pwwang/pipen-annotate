@@ -105,6 +105,7 @@ def _update_attrs_with_cls(
     parsed: Diot,
     envs: dict | None,
     prev_key: str | None = None,
+    cls_name: str | None = None,
 ) -> None:
     """Update the attrs of parsed terms with the class envs."""
     envs = envs or {}
@@ -113,13 +114,18 @@ def _update_attrs_with_cls(
 
         if key not in parsed:
             warnings.warn(
-                f"Missing annotation for env: {whole_key}",
+                f"Missing annotation for env: {whole_key} ({cls_name})",
                 MissingAnnotationWarning,
             )
             parsed[key] = Diot(attrs={}, terms={}, help="Not annotated")
 
         if isinstance(value, dict):
-            _update_attrs_with_cls(parsed[key].terms, value, whole_key)
+            _update_attrs_with_cls(
+                parsed[key].terms,
+                value,
+                whole_key,
+                cls_name,
+            )
             continue
 
         if "default" not in parsed[key].attrs:
@@ -187,7 +193,8 @@ class SectionInput(SectionItems):
             input_key, input_type = input_key_type.split(":", 1)
             if input_key not in parsed:
                 warnings.warn(
-                    f"Missing annotation for input: {input_key}",
+                    f"Missing annotation for input: {input_key} "
+                    f"({self._cls.__name__})",
                     MissingAnnotationWarning,
                 )
                 parsed[input_key] = Diot(
@@ -226,7 +233,8 @@ class SectionOutput(SectionItems):
 
             if parts[0] not in parsed:
                 warnings.warn(
-                    f"Missing annotation for output: {parts[0]}",
+                    f"Missing annotation for output: {parts[0]} "
+                    f"({self._cls.__name__})",
                     MissingAnnotationWarning,
                 )
                 parsed[parts[0]] = Diot(
@@ -245,7 +253,11 @@ class SectionEnvs(SectionItems):
 
     def parse(self) -> str | Diot | List[str]:
         parsed = _parse_terms(self._lines)
-        _update_attrs_with_cls(parsed, self._cls.envs)
+        _update_attrs_with_cls(
+            parsed,
+            self._cls.envs,
+            cls_name=self._cls.__name__,
+        )
         return parsed
 
 
