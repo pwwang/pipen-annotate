@@ -700,14 +700,14 @@ executing = ">1.1.0,<2.0"
 
 [[package]]
 name = "pipen"
-version = "0.4.2"
+version = "0.4.3"
 description = "A pipeline framework for python"
 category = "main"
 optional = false
 python-versions = ">=3.7.1,<4.0.0"
 files = [
-    {file = "pipen-0.4.2-py3-none-any.whl", hash = "sha256:1770abb62e5620a3c2df65dc1f9e939c3b6e61a847090334d1922ac35ddf0a5e"},
-    {file = "pipen-0.4.2.tar.gz", hash = "sha256:bd91b42cf07809481b99a282d6f80bf715a498d6ec520f986eda304cfcf4f714"},
+    {file = "pipen-0.4.3-py3-none-any.whl", hash = "sha256:469719c6d61c0c17aae6a1907331608e918d656175742d11b07228b62e2a6836"},
+    {file = "pipen-0.4.3.tar.gz", hash = "sha256:9efe12e6dbaf56952ffbd0ae3e693bfe6258d127304d99a6700fb07e9d165c36"},
 ]
 
 [package.dependencies]
@@ -883,14 +883,14 @@ yaml = ["pyyaml (>=6,<7)"]
 
 [[package]]
 name = "python-slugify"
-version = "8.0.0"
+version = "8.0.1"
 description = "A Python slugify application that also handles Unicode"
 category = "main"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "python-slugify-8.0.0.tar.gz", hash = "sha256:f1da83f3c7ab839b3f84543470cd95bdb5a81f1a0b80fed502f78b7dca256062"},
-    {file = "python_slugify-8.0.0-py2.py3-none-any.whl", hash = "sha256:51f217508df20a6c166c7821683384b998560adcf8f19a6c2ca8b460528ccd9c"},
+    {file = "python-slugify-8.0.1.tar.gz", hash = "sha256:ce0d46ddb668b3be82f4ed5e503dbc33dd815d83e2eb6824211310d3fb172a27"},
+    {file = "python_slugify-8.0.1-py2.py3-none-any.whl", hash = "sha256:70ca6ea68fe63ecc8fa4fcf00ae651fc8a5d02d93dcd12ae6d4fc7ca46c4d395"},
 ]
 
 [package.dependencies]
