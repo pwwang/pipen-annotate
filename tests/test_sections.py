@@ -64,24 +64,30 @@ def test_section_items():
     )
     assert parsed["item1"]["terms"]["subitem2"]["attrs"] == {}
     assert len(parsed["item1"]["terms"]["subitem2"]["terms"]) == 2
-    assert parsed["item1"]["terms"]["subitem2"]["terms"]["subsubitem1"][
-        "help"
-    ] == "subsubhelp1 more help for subsubitem1"
-    assert parsed["item1"]["terms"]["subitem2"]["terms"]["subsubitem1"][
-        "attrs"
-    ] == {}
-    assert parsed["item1"]["terms"]["subitem2"]["terms"]["subsubitem1"][
-        "terms"
-    ] == {}
-    assert parsed["item1"]["terms"]["subitem2"]["terms"]["subsubitem2"][
-        "help"
-    ] == "subsubhelp2"
-    assert parsed["item1"]["terms"]["subitem2"]["terms"]["subsubitem2"][
-        "attrs"
-    ] == {}
-    assert parsed["item1"]["terms"]["subitem2"]["terms"]["subsubitem2"][
-        "terms"
-    ] == {}
+    assert (
+        parsed["item1"]["terms"]["subitem2"]["terms"]["subsubitem1"]["help"]
+        == "subsubhelp1 more help for subsubitem1"
+    )
+    assert (
+        parsed["item1"]["terms"]["subitem2"]["terms"]["subsubitem1"]["attrs"]
+        == {}
+    )
+    assert (
+        parsed["item1"]["terms"]["subitem2"]["terms"]["subsubitem1"]["terms"]
+        == {}
+    )
+    assert (
+        parsed["item1"]["terms"]["subitem2"]["terms"]["subsubitem2"]["help"]
+        == "subsubhelp2"
+    )
+    assert (
+        parsed["item1"]["terms"]["subitem2"]["terms"]["subsubitem2"]["attrs"]
+        == {}
+    )
+    assert (
+        parsed["item1"]["terms"]["subitem2"]["terms"]["subsubitem2"]["terms"]
+        == {}
+    )
     assert parsed["item2"]["help"] == "help2 more help for item2"
     assert parsed["item2"]["attrs"] == {
         "attr1": "val1",
@@ -200,6 +206,8 @@ def test_envs():
     assert parsed["a"]["help"] == "help1"
     assert parsed["a"]["attrs"]["default"] == 1
     assert parsed["b"]["help"] == "help2"
+    print(parsed.b.attrs)
+    assert parsed["b"]["attrs"]["action"] == "namespace"
     assert parsed["b"]["terms"]["c"]["help"] == "help3"
     assert parsed["b"]["terms"]["c"]["attrs"]["default"] == 3
     assert parsed["b"]["terms"]["d"]["help"] == "Not annotated"
@@ -208,7 +216,10 @@ def test_envs():
     assert parsed["b"]["terms"]["e"]["terms"]["f"]["help"] == "help6"
     assert parsed["b"]["terms"]["e"]["terms"]["f"]["attrs"]["default"] == [6]
     assert parsed["b"]["terms"]["e"]["terms"]["f"]["attrs"]["nargs"] == "+"
-    assert parsed["b"]["terms"]["e"]["terms"]["f"]["attrs"]["action"] == "list"
+    assert (
+        parsed["b"]["terms"]["e"]["terms"]["f"]["attrs"]["action"]
+        == "clear_extend"
+    )
 
 
 def test_is_iterable():

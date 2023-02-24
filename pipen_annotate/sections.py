@@ -120,6 +120,7 @@ def _update_attrs_with_cls(
             parsed[key] = Diot(attrs={}, terms={}, help="Not annotated")
 
         if isinstance(value, dict):
+            parsed[key].attrs.setdefault("action", "namespace")
             _update_attrs_with_cls(
                 parsed[key].terms,
                 value,
@@ -137,7 +138,7 @@ def _update_attrs_with_cls(
 
         if isinstance(value, list):
             if "action" not in parsed[key].attrs:
-                parsed[key].attrs["action"] = "list"
+                parsed[key].attrs["action"] = "clear_extend"
             if "nargs" not in parsed[key].attrs:
                 parsed[key].attrs["nargs"] = "+"
 
