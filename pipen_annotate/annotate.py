@@ -93,8 +93,27 @@ def _register_section(
 
     Args:
         section: The section name.
-        section_class: The section class.
+        section_class: The section class or a shortcut string to
+            builtin section class.
+            summary: SectionSummary
+            input: SectionInput
+            output: SectionOutput
+            envs: SectionEnvs
+            items: SectionItems
+            text: SectionText
     """
+    if isinstance(section_class, str):
+        try:
+            section_class = getattr(
+                sections,
+                f"Section{section_class.title()}",
+            )
+        except AttributeError:
+            raise ValueError(
+                f"Invalid section class shortcut: {section_class}\n"
+                f"Valid shortcuts: {', '.join(sections.__all__)}",
+            ) from None
+
     SECTION_TYPES[section] = section_class
 
 

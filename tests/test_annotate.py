@@ -111,3 +111,28 @@ def test_register_section():
 
     annotate.unregister_section("Test")
     assert "Test" not in SECTION_TYPES
+
+
+def test_register_section_with_shotcut():
+    annotate.register_section("Test", "text")
+
+    with pytest.warns(MissingAnnotationWarning):
+        @annotate
+        class TestClass:
+            """Summary
+
+            Test:
+                a: help1
+                b: help2
+            """
+            input = "infile:file"
+            output = "outfile:file:{{in.infile | basename}}"
+            envs = {"arg1": 1, "arg2": 2}
+
+    assert TestClass.annotated["Test"] == "a: help1\nb: help2"
+    annotate.unregister_section("Test")
+
+
+def test_register_section_with_invalid_type():
+    with pytest.raises(ValueError):
+        annotate.register_section("Test", "invalid")

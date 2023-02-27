@@ -9,6 +9,15 @@ import warnings
 from diot import Diot, OrderedDiot
 from pipen.defaults import ProcInputType
 
+__all__ = (
+    "SectionSummary",
+    "SectionInput",
+    "SectionOutput",
+    "SectionEnvs",
+    "SectionItems",
+    "SectionText",
+)
+
 ITEM_LINE_REGEX = re.compile(
     r"(?P<name>^[\w-]+)\s*(?:\((?P<attrs>.+?)\))?:(?P<help>.+)?$"
 )
@@ -265,4 +274,4 @@ class SectionEnvs(SectionItems):
 class SectionText(Section):
 
     def parse(self) -> str | Diot | List[str]:
-        return "\n".join(self._lines)
+        return "\n".join(_dedent(self._lines))
