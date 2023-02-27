@@ -80,7 +80,10 @@ def _parse_terms(lines: List[str], prefix: str | None = None) -> Diot:
                     terms[name].attrs[attr_name] = (
                         True if attr_value is None else attr_value
                     )
-            terms[name].help = help.lstrip()
+
+            if help is not None:
+                terms[name].help = help.lstrip()
+
             item = terms[name]
             just_matched = True
         elif item is None:
