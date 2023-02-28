@@ -49,12 +49,14 @@ def _parse_terms(lines: List[str], prefix: str | None = None) -> Diot:
     sublines = []
     item = None
     just_matched = False
+    help_continuing = False
     for line in lines:
         if prefix:
             matched = ITEM_LINE_REGEX.match(line[len(prefix):])
         else:
             matched = ITEM_LINE_REGEX.match(line)
 
+        lstripped_line = line.lstrip()
         if matched:
             if item:
                 # See if we have sub-terms
@@ -81,17 +83,24 @@ def _parse_terms(lines: List[str], prefix: str | None = None) -> Diot:
                     )
 
             if help is not None:
-                terms[name].help = help.lstrip()
+                terms[name].help = help.strip()
+                if terms[name].help == "|":
+                    help_continuing = True
 
             item = terms[name]
             just_matched = True
         elif item is None:
             raise ValueError(f"Invalid item line: {line}")
-        elif just_matched and not line.lstrip().startswith("- "):
-            item.help += f" {line.lstrip()}"
-        elif line.lstrip().startswith("- "):
+        elif just_matched and not lstripped_line.startswith("- "):
+            if help_continuing and item.help == "|":
+                sep = item.help = ""
+            else:
+                sep = "\n" if help_continuing else " "
+            item.help = f"{item.help}{sep}{lstripped_line}"
+        elif lstripped_line.startswith("- "):
             sublines.append(line)
             just_matched = False
+            help_continuing = False
         else:
             sublines.append(line)
 

@@ -220,6 +220,21 @@ def test_envs():
     )
 
 
+def test_envs_help_continuing():
+    class TestProc:
+        envs = {"a": 1}
+
+    section = SectionEnvs(TestProc)
+    section.consume("a: |")
+    section.consume("  help1")
+    section.consume("  help1 continued")
+
+    parsed = section.parse()
+
+    assert len(parsed) == 1
+    assert parsed["a"]["help"] == "help1\nhelp1 continued"
+
+
 def test_is_iterable():
     assert _is_iterable(1) is False
     assert _is_iterable("a") is False
