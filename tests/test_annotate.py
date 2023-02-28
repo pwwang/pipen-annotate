@@ -85,14 +85,13 @@ def test_annotate_with_single_docline():
 
 
 def test_register_section():
+    @annotate.register_section("Test")
     class TestSection(SectionItems):
         def parse(self):
             parsed = super().parse()
             for key, value in parsed.items():
                 value.attrs["test"] = True
             return parsed
-
-    annotate.register_section("Test", TestSection)
 
     class TestClass:
         """Summary

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import textwrap
 from weakref import WeakKeyDictionary
-from typing import Type, MutableMapping
+from typing import Callable, Type, MutableMapping
 from diot import OrderedDiot
 
 from pipen import Proc
@@ -127,8 +127,8 @@ def annotate(
 
 def _register_section(
     section: str,
-    section_class: Type[Section],
-) -> None:
+    section_class: Type[Section] | str | None = None,
+) -> Callable[[Type[Section]], Type[Section]] | Type[Section]:
     """Register a section to be parsed.
 
     Args:
@@ -142,6 +142,10 @@ def _register_section(
             items: SectionItems
             text: SectionText
     """
+    # When used as a decorator
+    if section_class is None:
+        return lambda cls: _register_section(section, cls)
+
     if isinstance(section_class, str):
         section_class = section_class.title()
         if section_class not in SECTION_TYPES:
@@ -152,6 +156,7 @@ def _register_section(
         section_class = SECTION_TYPES[section_class]
 
     SECTION_TYPES[section] = section_class
+    return section_class
 
 
 def _unregister_section(section: str) -> None:
