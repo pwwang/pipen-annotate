@@ -15,7 +15,7 @@ from pprint import pprint
 from pipen import Proc
 from pipen_annotate import annotate
 
-@annotate
+
 class Process(Proc):
     """Short description
 
@@ -35,7 +35,7 @@ class Process(Proc):
     output = "outfile:file:output.txt"
     args = {'ncores': 1}
 
-print(Process.annotated)
+annotated = annotate(Process)
 # prints:
 {'Envs': {'ncores': {'attrs': OrderedDiot([('default', 1), ('atype', 'int')]),
                      'help': 'Number of cores',

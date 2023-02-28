@@ -1,93 +1,133 @@
 from __future__ import annotations
 
 import textwrap
-from typing import TYPE_CHECKING, Type, MutableMapping
+from weakref import WeakKeyDictionary
+from typing import Type, MutableMapping
 from diot import OrderedDiot
 
-from . import sections
+from pipen import Proc
+from .sections import (
+    Section,
+    SectionSummary,
+    SectionInput,
+    SectionOutput,
+    SectionEnvs,
+    SectionItems,
+    SectionText,
+)
 
-if TYPE_CHECKING:  # pragma: no cover
-    from pipen import Proc
-
-SECTION_TYPES: MutableMapping[str, Type[sections.Section] | str] = {
-    "Summary": "summary",
-    "Input": "input",
-    "Output": "output",
-    "Envs": "envs",
-    "Args": "items",
-    "Returns": "items",
-    "Raises": "items",
-    "Warns": "items",
-    "See Also": "text",
-    "Notes": "text",
-    "References": "text",
-    "Examples": "text",
-    "Todo": "text",
+SECTION_TYPES: MutableMapping[str, Type[Section]] = {
+    "Summary": SectionSummary,
+    "Input": SectionInput,
+    "Output": SectionOutput,
+    "Envs": SectionEnvs,
+    "Args": SectionItems,
+    "Returns": SectionItems,
+    "Raises": SectionItems,
+    "Warns": SectionItems,
+    "See Also": SectionText,
+    "Notes": SectionText,
+    "References": SectionText,
+    "Examples": SectionText,
+    "Todo": SectionText,
+    "Text": SectionText,
+    "Iterms": SectionItems,
 }
 
+# Cache annotations
+ANNOTATED: WeakKeyDictionary[Type[Proc], OrderedDiot] = WeakKeyDictionary()
 
-def annotate(cls: Type[Proc]):
-    """Annotate a Proc class with docstring.
+
+def _annotate_uninherited(cls: Type[Proc]) -> OrderedDiot:
+    """Annotate a Proc class with docstring, without inheriting.
 
     Args:
         cls: The class to be annotated.
 
     Returns:
-        The annotated class.
+        The annotated dict.
     """
-    if hasattr(cls, "annotated"):
-        return cls
+    if cls not in ANNOTATED:
+        annotated = OrderedDiot()
+        docstring = cls.__doc__
 
-    cls.annotated = OrderedDiot()
-    docstring = cls.__doc__
-
-    if not docstring:
-        return cls
-
-    if docstring[0] in (" ", "\t"):
-        docstring = textwrap.dedent(docstring)
-    else:
-        parts = docstring.split("\n", 1)
-        if len(parts) == 1:
-            first, rest = parts[0], ""
+        if not docstring:
+            ANNOTATED[cls] = annotated
         else:
-            first, rest = parts
-        docstring = f"{first}\n{textwrap.dedent(rest)}"
-
-    section = sections.SectionSummary(cls)
-    section_name = "Summary"
-    for line in docstring.splitlines():
-        line = line.rstrip()
-        if line and line[-1] == ":" and line[:-1] in SECTION_TYPES:
-            cls.annotated[section_name] = section.parse()
-            section_name = line[:-1]
-            if isinstance(SECTION_TYPES[section_name], str):
-                section_class = getattr(
-                    sections,
-                    f"Section{SECTION_TYPES[section_name].title()}",
-                )
+            if docstring[0] in (" ", "\t"):
+                docstring = textwrap.dedent(docstring)
             else:
-                section_class = SECTION_TYPES[section_name]
+                parts = docstring.split("\n", 1)
+                if len(parts) == 1:
+                    first, rest = parts[0], ""
+                else:
+                    first, rest = parts
+                docstring = f"{first}\n{textwrap.dedent(rest)}"
 
-            section = section_class(cls)
-        else:
-            section.consume(line)
+            section = SectionSummary(cls)
+            section_name = "Summary"
+            for line in docstring.splitlines():
+                line = line.rstrip()
+                if line and line[-1] == ":" and line[:-1] in SECTION_TYPES:
+                    annotated[section_name] = section.parse()
+                    section_name = line[:-1]
+                    section = SECTION_TYPES[section_name](cls)
+                else:
+                    section.consume(line)
 
-    cls.annotated[section_name] = section.parse()
+            annotated[section_name] = section.parse()
 
-    if "Input" not in cls.annotated:
-        cls.annotated.Input = sections.SectionInput(cls).parse()
-    if "Output" not in cls.annotated:
-        cls.annotated.Output = sections.SectionOutput(cls).parse()
-    if "Envs" not in cls.annotated:
-        cls.annotated.Envs = sections.SectionEnvs(cls).parse()
+            if "Input" not in annotated:
+                annotated.Input = SectionInput(cls).parse()
+            if "Output" not in annotated:
+                annotated.Output = SectionOutput(cls).parse()
+            if "Envs" not in annotated:
+                annotated.Envs = SectionEnvs(cls).parse()
 
-    return cls
+            ANNOTATED[cls] = annotated
+
+    return ANNOTATED[cls]
+
+
+def _update_annotation(base: OrderedDiot, other: OrderedDiot) -> OrderedDiot:
+    """Update the annotation with another annotation."""
+    base = base.copy()
+    for key, value in other.items():
+        section_class = SECTION_TYPES[key]
+        base[key] = section_class.update_parsed(base[key], value)
+    return base
+
+
+def annotate(
+    cls: Type[Proc],
+    inherit: bool = False,
+) -> OrderedDiot:
+    """Annotate a Proc class with docstring.
+
+    Args:
+        cls: The class to be annotated.
+        inherit: Whether to inherit the annotations from the parent class.
+
+    Returns:
+        The annotated dict.
+    """
+    base = [
+        mro
+        for mro in cls.__mro__
+        if issubclass(mro, Proc) and mro is not Proc and mro is not cls
+    ]
+    annotated = _annotate_uninherited(cls)
+    if not inherit or not base:
+        return annotated
+
+    base = base[0]
+    base_annotated = annotate(base, inherit=inherit)
+    return _update_annotation(base_annotated, annotated)
 
 
 def _register_section(
     section: str,
-    section_class: Type[sections.Section],
+    section_class: Type[Section],
 ) -> None:
     """Register a section to be parsed.
 
@@ -103,16 +143,13 @@ def _register_section(
             text: SectionText
     """
     if isinstance(section_class, str):
-        try:
-            section_class = getattr(
-                sections,
-                f"Section{section_class.title()}",
-            )
-        except AttributeError:
+        section_class = section_class.title()
+        if section_class not in SECTION_TYPES:
             raise ValueError(
                 f"Invalid section class shortcut: {section_class}\n"
-                f"Valid shortcuts: {', '.join(sections.__all__)}",
+                f"Valid shortcuts: {', '.join(SECTION_TYPES)}",
             ) from None
+        section_class = SECTION_TYPES[section_class]
 
     SECTION_TYPES[section] = section_class
 

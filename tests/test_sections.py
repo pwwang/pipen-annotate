@@ -1,7 +1,6 @@
 import pytest  # noqa: F401
 
 from pipen_annotate.sections import (
-    MissingAnnotationWarning,
     SectionEnvs,
     SectionInput,
     SectionItems,
@@ -134,11 +133,12 @@ def test_input_missing_annotation():
     section = SectionInput(TestProc)
     section.consume("in2: help2")
 
-    with pytest.warns(
-        MissingAnnotationWarning,
-        match="Missing annotation for input",
-    ):
-        section.parse()
+    parsed = section.parse()
+    assert len(parsed) == 2
+    assert parsed["infile1"]["help"] == ""
+    assert parsed["infile1"]["attrs"]["itype"] == "file"
+    assert parsed["in2"]["help"] == "help2"
+    assert parsed["in2"]["attrs"]["itype"] == "var"
 
 
 def test_output():
@@ -170,11 +170,14 @@ def test_output_missing_annotation():
     section = SectionOutput(TestProc)
     section.consume("outdir: help2")
 
-    with pytest.warns(
-        MissingAnnotationWarning,
-        match="Missing annotation for output",
-    ):
-        section.parse()
+    parsed = section.parse()
+    assert len(parsed) == 2
+    assert parsed["outfile"]["help"] == ""
+    assert parsed["outfile"]["attrs"]["otype"] == "file"
+    assert parsed["outfile"]["attrs"]["default"] == "{{a}}"
+    assert parsed["outdir"]["help"] == "help2"
+    assert parsed["outdir"]["attrs"]["otype"] == "dir"
+    assert parsed["outdir"]["attrs"]["default"] == "{{b}}"
 
 
 def test_output_missing():
@@ -196,21 +199,16 @@ def test_envs():
     section.consume("  - e: help5")
     section.consume("    - f: help6")
 
-    with pytest.warns(
-        MissingAnnotationWarning,
-        match=r"Missing annotation for env: b\.d",
-    ):
-        parsed = section.parse()
+    parsed = section.parse()
 
     assert len(parsed) == 2
     assert parsed["a"]["help"] == "help1"
     assert parsed["a"]["attrs"]["default"] == 1
     assert parsed["b"]["help"] == "help2"
-    print(parsed.b.attrs)
     assert parsed["b"]["attrs"]["action"] == "namespace"
     assert parsed["b"]["terms"]["c"]["help"] == "help3"
     assert parsed["b"]["terms"]["c"]["attrs"]["default"] == 3
-    assert parsed["b"]["terms"]["d"]["help"] == "Not annotated"
+    assert parsed["b"]["terms"]["d"]["help"] == ""
     assert parsed["b"]["terms"]["d"]["attrs"]["default"] == 4
     assert parsed["b"]["terms"]["e"]["help"] == "help5"
     assert parsed["b"]["terms"]["e"]["terms"]["f"]["help"] == "help6"

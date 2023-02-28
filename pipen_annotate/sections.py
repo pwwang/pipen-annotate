@@ -1,10 +1,9 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from typing import Any, List
+from typing import Any, List, MutableMapping
 
 import re
 import textwrap
-import warnings
 
 from diot import Diot, OrderedDiot
 from pipen.defaults import ProcInputType
@@ -125,19 +124,15 @@ def _update_attrs_with_cls(
         whole_key = f"{prev_key}.{key}" if prev_key else key
 
         if key not in parsed:
-            warnings.warn(
-                f"Missing annotation for env: {whole_key} ({cls_name})",
-                MissingAnnotationWarning,
-            )
-            parsed[key] = Diot(attrs={}, terms={}, help="Not annotated")
+            parsed[key] = Diot(attrs={}, terms={}, help="")
 
         if isinstance(value, dict):
             parsed[key].attrs.setdefault("action", "namespace")
             _update_attrs_with_cls(
                 parsed[key].terms,
                 value,
-                whole_key,
-                cls_name,
+                prev_key=whole_key,
+                cls_name=cls_name,
             )
             continue
 
@@ -155,10 +150,6 @@ def _update_attrs_with_cls(
                 parsed[key].attrs["nargs"] = "+"
 
 
-class MissingAnnotationWarning(Warning):
-    """Warns when a Proc class has a missing annotation (input/output)."""
-
-
 class Section(ABC):
 
     def __init__(self, cls) -> None:
@@ -172,6 +163,22 @@ class Section(ABC):
     def parse(self) -> str | Diot | List[str]:  # pragma: no cover
         pass
 
+    @classmethod
+    def update_parsed(
+        cls,
+        base: str | List[str] | MutableMapping,
+        other: str | List[str] | MutableMapping,
+    ) -> str | List[str] | MutableMapping:
+        """Update the parsed result with the other result."""
+        if isinstance(other, str):
+            return other
+        if isinstance(other, list):
+            return base + other
+
+        base = base.copy()
+        base.update(other)
+        return base
+
 
 class SectionSummary(Section):
 
@@ -181,11 +188,46 @@ class SectionSummary(Section):
             long="\n".join(self._lines[1:]).lstrip(),
         )
 
+    @classmethod
+    def update_parsed(
+        cls,
+        base: str | List[str] | MutableMapping,
+        other: str | List[str] | MutableMapping,
+    ) -> str | List[str] | MutableMapping:
+        """Update the parsed result with the other result."""
+        base = base.copy()
+        if other.short:
+            base.short = other.short
+        if other.long:
+            base.long = other.long
+        return base
+
 
 class SectionItems(Section):
 
     def parse(self) -> str | Diot | List[str]:
         return _parse_terms(self._lines)
+
+    @classmethod
+    def update_parsed(
+        cls,
+        base: str | List[str] | MutableMapping,
+        other: str | List[str] | MutableMapping,
+    ) -> str | List[str] | MutableMapping:
+        """Update the parsed result with the other result."""
+        base = base.copy()
+        # arg, Diot(attrs, terms, help)
+        for key, value in other.items():
+            if key not in base:
+                base[key] = value
+                continue
+
+            base[key].attrs.update(value.attrs)
+            base[key].terms.update(value.terms)
+            if value.help:
+                base[key].help = value.help
+
+        return base
 
 
 class SectionInput(SectionItems):
@@ -205,15 +247,10 @@ class SectionInput(SectionItems):
 
             input_key, input_type = input_key_type.split(":", 1)
             if input_key not in parsed:
-                warnings.warn(
-                    f"Missing annotation for input: {input_key} "
-                    f"({self._cls.__name__})",
-                    MissingAnnotationWarning,
-                )
                 parsed[input_key] = Diot(
                     attrs={"itype": input_type},
                     terms={},
-                    help="Not annotated",
+                    help="",
                 )
             else:
                 parsed[input_key].attrs["itype"] = input_type
@@ -245,15 +282,10 @@ class SectionOutput(SectionItems):
                 continue
 
             if parts[0] not in parsed:
-                warnings.warn(
-                    f"Missing annotation for output: {parts[0]} "
-                    f"({self._cls.__name__})",
-                    MissingAnnotationWarning,
-                )
                 parsed[parts[0]] = Diot(
                     attrs={"otype": parts[1], "default": parts[2]},
                     terms={},
-                    help="Not annotated",
+                    help="",
                 )
             else:
                 parsed[parts[0]].attrs["otype"] = parts[1]
