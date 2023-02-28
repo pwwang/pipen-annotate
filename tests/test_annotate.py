@@ -116,7 +116,7 @@ def test_register_section():
 def test_register_section_with_shotcut():
     annotate.register_section("Test", "text")
 
-    class TestClass:
+    class TestClass(Proc):
         """Summary
 
         Test:
