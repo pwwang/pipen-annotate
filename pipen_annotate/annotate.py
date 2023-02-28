@@ -31,7 +31,7 @@ SECTION_TYPES: MutableMapping[str, Type[Section]] = {
     "Examples": SectionText,
     "Todo": SectionText,
     "Text": SectionText,
-    "Iterms": SectionItems,
+    "Items": SectionItems,
 }
 
 # Cache annotations
