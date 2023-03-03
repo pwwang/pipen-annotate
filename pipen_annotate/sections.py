@@ -192,10 +192,21 @@ class Section(ABC):
 class SectionSummary(Section):
 
     def parse(self) -> str | Diot | List[str]:
-        return Diot(
-            short=self._lines[0],
-            long="\n".join(self._lines[1:]).lstrip(),
-        )
+        """Parse the summary section."""
+        lines = self._lines
+        if lines[0] and lines[0][0] in (" ", "\t"):
+            lines = _dedent(self._lines)
+        else:
+            lines = [lines[0]] + _dedent(lines[1:])
+
+        short = long = ""
+        for i, line in enumerate(lines):
+            if not line:
+                long = "\n".join(lines[i + 1:])
+                break
+            short += line + " "
+
+        return Diot(short=short.rstrip(), long=long)
 
     @classmethod
     def update_parsed(

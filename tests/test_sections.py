@@ -13,12 +13,41 @@ from pipen_annotate.sections import (
 
 def test_section_summary():
     section = SectionSummary(None)
+    section.consume("")
+    assert section.parse() == {"short": "", "long": ""}
+
+    section = SectionSummary(None)
+    section.consume("    Abc")
+    section.consume("    def")
+    section.consume("")
+    section.consume("    Ghi")
+    assert section.parse() == {"short": "Abc def", "long": "Ghi"}
+
+    section = SectionSummary(None)
+    section.consume("Abc")
+    section.consume("    def")
+    section.consume("    ")
+    section.consume("    Ghi")
+    assert section.parse() == {"short": "Abc def", "long": "Ghi"}
+
+    section = SectionSummary(None)
     section.consume("Short summary.")
     section.consume("")
     section.consume("Long summary.")
     section.consume("Long long summary.")
     assert section.parse() == {
         "short": "Short summary.",
+        "long": "Long summary.\nLong long summary.",
+    }
+
+    section = SectionSummary(None)
+    section.consume("Short summary,")
+    section.consume("short summary continued.")
+    section.consume("")
+    section.consume("Long summary.")
+    section.consume("Long long summary.")
+    assert section.parse() == {
+        "short": "Short summary, short summary continued.",
         "long": "Long summary.\nLong long summary.",
     }
 
