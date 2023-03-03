@@ -1,7 +1,7 @@
 import pytest  # noqa: F401
 
 import json
-from pipen import Proc
+from pipen import Proc, ProcGroup
 from pipen_annotate import annotate
 from pipen_annotate.annotate import SECTION_TYPES
 from pipen_annotate.sections import SectionItems, Section, _dedent
@@ -220,3 +220,19 @@ def test_inherit():
     assert annotated["Envs"]["arg1"]["attrs"]["choices"] is True
     assert annotated["Envs"]["arg2"]["help"] == "help2"
     assert annotated["Envs"]["arg3"]["help"] == "help3"
+
+
+def test_procgroup():
+    class MyGroup(ProcGroup):
+        """Summary
+
+        Args:
+            arg1: help1
+            arg2: help2
+        """
+
+    annotated = annotate(MyGroup)
+    assert annotated["Summary"]["short"] == "Summary"
+    assert annotated["Summary"]["long"] == ""
+    assert annotated["Args"]["arg1"]["help"] == "help1"
+    assert annotated["Args"]["arg2"]["help"] == "help2"
