@@ -1,4 +1,4 @@
 from .annotate import annotate  # noqa: F401
 from .sections import Section  # noqa: F401
 
-version = "0.3.3"
+version = "0.4.0"
