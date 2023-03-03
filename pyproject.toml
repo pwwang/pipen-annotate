@@ -8,7 +8,7 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.7.1"
-pipen = "^0.4"
+pipen = "^0.5"
 # diot required by xqute that's required by pipen
 
 [tool.poetry.dev-dependencies]

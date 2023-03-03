@@ -86,14 +86,14 @@ trio = ["trio (>=0.16,<0.22)"]
 
 [[package]]
 name = "argx"
-version = "0.2.3"
+version = "0.2.4"
 description = "Super-charged argparse for python"
 category = "main"
 optional = false
 python-versions = ">=3.7,<4.0"
 files = [
-    {file = "argx-0.2.3-py3-none-any.whl", hash = "sha256:516199922dc4ebb78a1821d7db3b3bd981361f3daf27735a35f550b7b22cca98"},
-    {file = "argx-0.2.3.tar.gz", hash = "sha256:452983b1e9f22fd00fa02cf2a34532b3cc37e324f4f5c6e03beff2d8189c9084"},
+    {file = "argx-0.2.4-py3-none-any.whl", hash = "sha256:91b7fa8aad3b770c4fe159bf37d84ba85535b73f16a25067855477fbf9d3ef1d"},
+    {file = "argx-0.2.4.tar.gz", hash = "sha256:8e56650b67ff6f00c4564906e628a6efb865534351f85512b6dd5b0f9ebff8fb"},
 ]
 
 [package.dependencies]
@@ -533,18 +533,6 @@ files = [
 ]
 
 [[package]]
-name = "more-itertools"
-version = "8.14.0"
-description = "More routines for operating on iterables, beyond itertools"
-category = "main"
-optional = false
-python-versions = ">=3.5"
-files = [
-    {file = "more-itertools-8.14.0.tar.gz", hash = "sha256:c09443cd3d5438b8dafccd867a6bc1cb0894389e90cb53d227456b0b0bccb750"},
-    {file = "more_itertools-8.14.0-py3-none-any.whl", hash = "sha256:1bc4f91ee5b1b31ac7ceacc17c09befe6a40a503907baf9c839c229b5095cfd2"},
-]
-
-[[package]]
 name = "numpy"
 version = "1.21.6"
 description = "NumPy is the fundamental package for array computing with Python."
@@ -700,14 +688,14 @@ executing = ">1.1.0,<2.0"
 
 [[package]]
 name = "pipen"
-version = "0.4.6"
+version = "0.5.0"
 description = "A pipeline framework for python"
 category = "main"
 optional = false
 python-versions = ">=3.7.1,<4.0.0"
 files = [
-    {file = "pipen-0.4.6-py3-none-any.whl", hash = "sha256:bdc390b5e8ac32158e7c157d5b1040232a844f908eb5398b0118ccebb5429d81"},
-    {file = "pipen-0.4.6.tar.gz", hash = "sha256:096cf0ae853071cac29bd159b0c618b307a3fc416c05a2082b11c78977d7ba4f"},
+    {file = "pipen-0.5.0-py3-none-any.whl", hash = "sha256:8cfe25f6887f597a484286b21380dede46355fda9dd1755bca2d744d189ea9d6"},
+    {file = "pipen-0.5.0.tar.gz", hash = "sha256:f463a6f9928ebda69654a0b5783461f7f725d42ab755f5cc4da6b76f10101725"},
 ]
 
 [package.dependencies]
@@ -715,7 +703,6 @@ argx = ">=0.2,<0.3"
 cached-property = ">=1,<2"
 enlighten = ">=1,<2"
 liquidpy = ">=0.7,<0.8"
-more-itertools = ">=8,<9"
 pandas = ">=1.3,<2.0"
 pipda = ">=0.11,<0.12"
 python-simpleconf = {version = ">=0.5,<0.6", extras = ["toml"]}
@@ -1188,4 +1175,4 @@ testing = ["big-O", "flake8 (<5)", "jaraco.functools", "jaraco.itertools", "more
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.7.1"
-content-hash = "fe6322a3ed93896e9a8ca04a10f75ba0130132d8c4588974bc787398e5330710"
+content-hash = "bbe9caad6c66531755488994fd7c0b98c47862f4428bdedc1056e5870ecd91b1"
