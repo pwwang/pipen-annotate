@@ -18,9 +18,9 @@ __all__ = (
 )
 
 ITEM_LINE_REGEX = re.compile(
-    r"(?P<name>^[\w-]+)\s*(?:\((?P<attrs>.+?)\))?:(?P<help>.+)?$"
+    r"(?P<name>^[^\s]+)\s*(?:\((?P<attrs>.+?)\))?:(?P<help>.+)?$"
 )
-ITEM_ATTR_REGEX = re.compile(r"(?P<name>[\w-]+)(?:\s*:\s*(?P<value>.+))?")
+ITEM_ATTR_REGEX = re.compile(r"(?P<name>[\w-]+)(?:\s*[:=]\s*(?P<value>.+))?")
 
 
 def _is_iterable(obj: Any) -> bool:
