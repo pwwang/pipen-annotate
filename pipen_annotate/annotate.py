@@ -68,10 +68,15 @@ def _annotate_uninherited(cls: Type[Proc]) -> OrderedDiot:
             section_name = "Summary"
             for line in docstring.splitlines():
                 line = line.rstrip()
-                if line and line[-1] == ":" and line[:-1] in SECTION_TYPES:
-                    annotated[section_name] = section.parse()
-                    section_name = line[:-1]
-                    section = SECTION_TYPES[section_name](cls)
+                if line and line[-1] == ":":
+                    if line[:-1] in SECTION_TYPES:
+                        annotated[section_name] = section.parse()
+                        section_name = line[:-1]
+                        section = SECTION_TYPES[section_name](cls)
+                    elif line[:-1].isidentifier():
+                        annotated[section_name] = section.parse()
+                        section_name = line[:-1]
+                        section = SectionText(cls)
                 else:
                     section.consume(line)
 

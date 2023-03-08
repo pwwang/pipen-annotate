@@ -236,3 +236,19 @@ def test_procgroup():
     assert annotated["Summary"]["long"] == ""
     assert annotated["Args"]["arg1"]["help"] == "help1"
     assert annotated["Args"]["arg2"]["help"] == "help2"
+
+
+def test_unknown_section():
+    class TestClass:
+        """Summary
+
+        Unknown:
+            help1
+            help2
+        """
+        input = "infile:file"
+        output = "outfile:file:{{in.infile | basename}}"
+        envs = {"arg1": 1, "arg2": 2}
+
+    annotated = annotate(TestClass)
+    assert annotated["Unknown"] == "help1\nhelp2"
