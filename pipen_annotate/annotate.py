@@ -72,7 +72,10 @@ def _annotate_uninherited(cls: Type[Proc]) -> OrderedDiot:
                     if line[:-1] in SECTION_TYPES:
                         annotated[section_name] = section.parse()
                         section_name = line[:-1]
-                        section = SECTION_TYPES[section_name](cls, section_name)
+                        section = SECTION_TYPES[section_name](
+                            cls,
+                            section_name,
+                        )
                     elif line[:-1].isidentifier():
                         annotated[section_name] = section.parse()
                         section_name = line[:-1]
