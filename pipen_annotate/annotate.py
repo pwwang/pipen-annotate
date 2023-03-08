@@ -64,19 +64,19 @@ def _annotate_uninherited(cls: Type[Proc]) -> OrderedDiot:
                     first, rest = parts
                 docstring = f"{first}\n{textwrap.dedent(rest)}"
 
-            section = SectionSummary(cls)
             section_name = "Summary"
+            section = SectionSummary(cls, section_name)
             for line in docstring.splitlines():
                 line = line.rstrip()
                 if line and line[-1] == ":":
                     if line[:-1] in SECTION_TYPES:
                         annotated[section_name] = section.parse()
                         section_name = line[:-1]
-                        section = SECTION_TYPES[section_name](cls)
+                        section = SECTION_TYPES[section_name](cls, section_name)
                     elif line[:-1].isidentifier():
                         annotated[section_name] = section.parse()
                         section_name = line[:-1]
-                        section = SectionText(cls)
+                        section = SectionText(cls, section_name)
                 else:
                     section.consume(line)
 
@@ -84,11 +84,11 @@ def _annotate_uninherited(cls: Type[Proc]) -> OrderedDiot:
 
             if issubclass(cls, Proc):
                 if "Input" not in annotated:
-                    annotated.Input = SectionInput(cls).parse()
+                    annotated.Input = SectionInput(cls, "Input").parse()
                 if "Output" not in annotated:
-                    annotated.Output = SectionOutput(cls).parse()
+                    annotated.Output = SectionOutput(cls, "Output").parse()
                 if "Envs" not in annotated:
-                    annotated.Envs = SectionEnvs(cls).parse()
+                    annotated.Envs = SectionEnvs(cls, "Envs").parse()
 
             ANNOTATED[cls] = annotated
 

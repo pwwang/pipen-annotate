@@ -18,9 +18,13 @@ __all__ = (
 )
 
 ITEM_LINE_REGEX = re.compile(
-    r"(?P<name>^[^\s]+)\s*(?:\((?P<attrs>.+?)\))?:(?P<help>.+)?$"
+    r"^(?P<name>[^\s]+)\s*(?:\((?P<attrs>.+?)\))?:(?P<help>.+)?$"
 )
-ITEM_ATTR_REGEX = re.compile(r"(?P<name>[\w-]+)(?:\s*[:=]\s*(?P<value>.+))?")
+ITEM_ATTR_REGEX = re.compile(r"^(?P<name>[\w-]+)(?:\s*[:=]\s*(?P<value>.+))?$")
+
+
+class MalFormattedAnnotationError(Exception):
+    """Raised when the annotation is malformatted"""
 
 
 def _is_iterable(obj: Any) -> bool:
@@ -41,7 +45,10 @@ def _dedent(lines: List[str]) -> List[str]:
     return textwrap.dedent("\n".join(lines)).splitlines()
 
 
-def _parse_terms(lines: List[str], prefix: str | None = None) -> Diot:
+def _parse_terms(
+    lines: List[str],
+    prefix: str | None = None,
+) -> Diot:
     """Parse a list of lines as terms.
     """
     terms = OrderedDiot()
@@ -74,7 +81,11 @@ def _parse_terms(lines: List[str], prefix: str | None = None) -> Diot:
                     attr = attr.strip()
                     attr_matched = ITEM_ATTR_REGEX.match(attr)
                     if not attr_matched:
-                        raise ValueError(f"Invalid item attribute: {attr}")
+                        raise MalFormattedAnnotationError(
+                            f"\nInvalid item attribute: {attr}"
+                            "\nExpecting: <name>[:=]<value>"
+                            f"\nFull attributes: {attrs}"
+                        )
                     attr_name = attr_matched.group("name")
                     attr_value = attr_matched.group("value")
 
@@ -90,7 +101,10 @@ def _parse_terms(lines: List[str], prefix: str | None = None) -> Diot:
             item = terms[name]
             just_matched = True
         elif item is None:
-            raise ValueError(f"Invalid item line: {line}")
+            raise MalFormattedAnnotationError(
+                f"\nInvalid item line: {line}"
+                "\nExpecting: <name>[ (<attrs>)]: <help>"
+            )
         elif just_matched and not lstripped_line.startswith("- "):
             if help_continuing and item.help == "|":
                 sep = item.help = ""
@@ -161,7 +175,8 @@ def _update_attrs_with_cls(
 
 class Section(ABC):
 
-    def __init__(self, cls) -> None:
+    def __init__(self, cls, name) -> None:
+        self.name = name
         self._cls = cls
         self._lines: List[str] = []
 
@@ -226,7 +241,12 @@ class SectionSummary(Section):
 class SectionItems(Section):
 
     def parse(self) -> str | Diot | List[str]:
-        return _parse_terms(self._lines)
+        try:
+            return _parse_terms(self._lines)
+        except MalFormattedAnnotationError as e:
+            raise MalFormattedAnnotationError(
+                f"[{self._cls.__name__}/{self.name}] {e}"
+            ) from None
 
     @classmethod
     def update_parsed(
@@ -253,7 +273,7 @@ class SectionItems(Section):
 class SectionInput(SectionItems):
 
     def parse(self) -> str | Diot | List[str]:
-        parsed = _parse_terms(self._lines)
+        parsed = super().parse()
         input_keys = self._cls.input
 
         if isinstance(input_keys, str):
@@ -291,7 +311,7 @@ class SectionOutput(SectionItems):
         if not output:
             return Diot()
 
-        parsed = _parse_terms(self._lines)
+        parsed = super().parse()
 
         if not isinstance(output, (list, tuple)):
             output = [out.strip() for out in output.split(",")]
@@ -317,7 +337,7 @@ class SectionOutput(SectionItems):
 class SectionEnvs(SectionItems):
 
     def parse(self) -> str | Diot | List[str]:
-        parsed = _parse_terms(self._lines)
+        parsed = super().parse()
         _update_attrs_with_cls(
             parsed,
             self._cls.envs,

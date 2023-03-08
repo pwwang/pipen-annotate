@@ -7,30 +7,31 @@ from pipen_annotate.sections import (
     SectionOutput,
     SectionSummary,
     SectionText,
+    MalFormattedAnnotationError,
     _is_iterable,
 )
 
 
 def test_section_summary():
-    section = SectionSummary(None)
+    section = SectionSummary(None, "Summary")
     section.consume("")
     assert section.parse() == {"short": "", "long": ""}
 
-    section = SectionSummary(None)
+    section = SectionSummary(None, "Summary")
     section.consume("    Abc")
     section.consume("    def")
     section.consume("")
     section.consume("    Ghi")
     assert section.parse() == {"short": "Abc def", "long": "Ghi"}
 
-    section = SectionSummary(None)
+    section = SectionSummary(None, "Summary")
     section.consume("Abc")
     section.consume("    def")
     section.consume("    ")
     section.consume("    Ghi")
     assert section.parse() == {"short": "Abc def", "long": "Ghi"}
 
-    section = SectionSummary(None)
+    section = SectionSummary(None, "Summary")
     section.consume("Short summary.")
     section.consume("")
     section.consume("Long summary.")
@@ -40,7 +41,7 @@ def test_section_summary():
         "long": "Long summary.\nLong long summary.",
     }
 
-    section = SectionSummary(None)
+    section = SectionSummary(None, "Summary")
     section.consume("Short summary,")
     section.consume("short summary continued.")
     section.consume("")
@@ -53,14 +54,14 @@ def test_section_summary():
 
 
 def test_section_text():
-    section = SectionText(None)
+    section = SectionText(None, "Text")
     section.consume("Text line 1.")
     section.consume("Text line 2.")
     assert section.parse() == "Text line 1.\nText line 2."
 
 
 def test_section_items():
-    section = SectionItems(None)
+    section = SectionItems(None, "Items")
     text = """\
     item1: help1
         more help for item1
@@ -126,16 +127,19 @@ def test_section_items():
 
 
 def test_invalid_attr():
-    section = SectionItems(None)
+    section = SectionItems(int, "Items")
     section.consume("item1 (,): help1")
-    with pytest.raises(ValueError, match="Invalid item attribute"):
+    with pytest.raises(
+        MalFormattedAnnotationError,
+        match="Invalid item attribute",
+    ):
         section.parse()
 
 
 def test_invalid_item():
-    section = SectionItems(None)
+    section = SectionItems(int, "Items")
     section.consume("item1")
-    with pytest.raises(ValueError, match="Invalid item line"):
+    with pytest.raises(MalFormattedAnnotationError, match="Invalid item line"):
         section.parse()
 
 
@@ -143,7 +147,7 @@ def test_input():
     class TestProc:
         input = "infile1:file, in2"
 
-    section = SectionInput(TestProc)
+    section = SectionInput(TestProc, "Input")
     section.consume("infile1: help1")
     section.consume("in2: help2")
 
@@ -159,7 +163,7 @@ def test_input_missing_annotation():
     class TestProc:
         input = "infile1:file, in2"
 
-    section = SectionInput(TestProc)
+    section = SectionInput(TestProc, "Input")
     section.consume("in2: help2")
 
     parsed = section.parse()
@@ -174,7 +178,7 @@ def test_output():
     class TestProc:
         output = "outfile:file:{{a}}, outdir:dir:{{b}}, out:{{c}}"
 
-    section = SectionOutput(TestProc)
+    section = SectionOutput(TestProc, "Output")
     section.consume("outfile: help1")
     section.consume("outdir: help2")
     section.consume("out: help3")
@@ -196,7 +200,7 @@ def test_output_missing_annotation():
     class TestProc:
         output = "outfile:file:{{a}}, outdir:dir:{{b}}, 1"
 
-    section = SectionOutput(TestProc)
+    section = SectionOutput(TestProc, "Output")
     section.consume("outdir: help2")
 
     parsed = section.parse()
@@ -213,7 +217,7 @@ def test_output_missing():
     class TestProc:
         output = None
 
-    section = SectionOutput(TestProc)
+    section = SectionOutput(TestProc, "Output")
     assert section.parse() == {}
 
 
@@ -221,7 +225,7 @@ def test_envs():
     class TestProc:
         envs = {"a": 1, "b": {"c": 3, "d": 4, "e": {"f": [6]}}}
 
-    section = SectionEnvs(TestProc)
+    section = SectionEnvs(TestProc, "Envs")
     section.consume("a: help1")
     section.consume("b: help2")
     section.consume("  - c: help3")
@@ -253,7 +257,7 @@ def test_envs_help_continuing():
     class TestProc:
         envs = {"a": 1}
 
-    section = SectionEnvs(TestProc)
+    section = SectionEnvs(TestProc, "Envs")
     section.consume("a: |")
     section.consume("  help1")
     section.consume("  help1 continued")
