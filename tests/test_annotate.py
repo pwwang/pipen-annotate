@@ -227,14 +227,14 @@ def test_procgroup():
         """Summary
 
         Args:
-            arg1: help1
+            arg1:
             arg2: help2
         """
 
     annotated = annotate(MyGroup)
     assert annotated["Summary"]["short"] == "Summary"
     assert annotated["Summary"]["long"] == ""
-    assert annotated["Args"]["arg1"]["help"] == "help1"
+    assert annotated["Args"]["arg1"]["help"] == ""
     assert annotated["Args"]["arg2"]["help"] == "help2"
 
 
