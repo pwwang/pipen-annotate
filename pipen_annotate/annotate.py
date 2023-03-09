@@ -80,6 +80,8 @@ def _annotate_uninherited(cls: Type[Proc]) -> OrderedDiot:
                         annotated[section_name] = section.parse()
                         section_name = line[:-1]
                         section = SectionText(cls, section_name)
+                    else:
+                        section.consume(line)
                 else:
                     section.consume(line)
 
