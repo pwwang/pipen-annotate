@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import textwrap
 from weakref import WeakKeyDictionary
 from typing import Callable, Type, MutableMapping
@@ -76,7 +77,7 @@ def _annotate_uninherited(cls: Type[Proc]) -> OrderedDiot:
                             cls,
                             section_name,
                         )
-                    elif line[:-1].isidentifier():
+                    elif re.sub(r"(?!^) ", "", line[:-1]).isidentifier():
                         annotated[section_name] = section.parse()
                         section_name = line[:-1]
                         section = SectionText(cls, section_name)
