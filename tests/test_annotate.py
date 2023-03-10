@@ -4,7 +4,7 @@ import json
 from pipen import Proc, ProcGroup
 from pipen_annotate import annotate
 from pipen_annotate.annotate import SECTION_TYPES
-from pipen_annotate.sections import SectionItems, Section, _dedent
+from pipen_annotate.sections import SectionItems, Section, UnknownAnnotationItemWarning, _dedent
 
 
 def test_annotate():
@@ -15,6 +15,7 @@ def test_annotate():
         Input:
             infile: Input file
             infiles: Input files
+            x: help1
 
         Output:
             outfile: Output file
@@ -27,7 +28,8 @@ def test_annotate():
         output = "outfile:file:{{in.infile | basename}}"
         envs = {"arg1": 1, "arg2": 2}
 
-    annotated = annotate(TestClass)
+    with pytest.warns(UnknownAnnotationItemWarning):
+        annotated = annotate(TestClass)
     assert annotated["Summary"]["short"] == "Summary"
     assert annotated["Summary"]["long"] == ""
     assert annotated["Input"]["infile"]["help"] == "Input file"
@@ -59,12 +61,17 @@ def test_annotate_with_leading_space():
     class TestClass:
         """\
         Summary
+
+        Output:
+            outfile: Output file
+            y: help2
         """
         input = "infile:file"
         output = "outfile:file:{{in.infile | basename}}"
         envs = {"arg1": 1, "arg2": 2}
 
-    annotated = annotate(TestClass)
+    with pytest.warns(UnknownAnnotationItemWarning):
+        annotated = annotate(TestClass)
 
     assert annotated["Summary"]["short"] == "Summary"
     assert annotated["Summary"]["long"] == ""

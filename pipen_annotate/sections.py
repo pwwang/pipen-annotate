@@ -4,6 +4,7 @@ from typing import Any, List, MutableMapping
 
 import re
 import textwrap
+import warnings
 
 from diot import Diot, OrderedDiot
 from pipen.defaults import ProcInputType
@@ -25,6 +26,10 @@ ITEM_ATTR_REGEX = re.compile(r"^(?P<name>[\w-]+)(?:\s*[:=]\s*(?P<value>.+))?$")
 
 class MalFormattedAnnotationError(Exception):
     """Raised when the annotation is malformatted"""
+
+
+class UnknownAnnotationItemWarning(Warning):
+    """Raised when the annotation item is unknown"""
 
 
 def _is_iterable(obj: Any) -> bool:
@@ -281,11 +286,13 @@ class SectionInput(SectionItems):
                 input_key.strip() for input_key in input_keys.split(",")
             ]
 
+        input_key_names = set()
         for input_key_type in input_keys or []:
             if ":" not in input_key_type:
                 input_key_type = f"{input_key_type}:{ProcInputType.VAR}"
 
             input_key, input_type = input_key_type.split(":", 1)
+            input_key_names.add(input_key)
             if input_key not in parsed:
                 parsed[input_key] = Diot(
                     attrs={"itype": input_type},
@@ -300,6 +307,13 @@ class SectionInput(SectionItems):
                 parsed[input_key].attrs["action"] = "append"
             else:
                 parsed[input_key].attrs["action"] = "extend"
+
+        if set(parsed) - input_key_names:
+            warnings.warn(
+                f"[{self._cls.__name__}] Unknown input keys "
+                f"{set(parsed) - input_key_names}",
+                UnknownAnnotationItemWarning,
+            )
 
         return parsed
 
@@ -316,11 +330,13 @@ class SectionOutput(SectionItems):
         if not isinstance(output, (list, tuple)):
             output = [out.strip() for out in output.split(",")]
 
+        out_names = set()
         for out in output:
             parts = _parse_one_output(out)
             if not parts:
                 continue
 
+            out_names.add(parts[0])
             if parts[0] not in parsed:
                 parsed[parts[0]] = Diot(
                     attrs={"otype": parts[1], "default": parts[2]},
@@ -330,6 +346,13 @@ class SectionOutput(SectionItems):
             else:
                 parsed[parts[0]].attrs["otype"] = parts[1]
                 parsed[parts[0]].attrs["default"] = parts[2]
+
+        if set(parsed) - out_names:
+            warnings.warn(
+                f"[{self._cls.__name__}] Unknown output keys "
+                f"{set(parsed) - out_names}",
+                UnknownAnnotationItemWarning,
+            )
 
         return parsed
 
