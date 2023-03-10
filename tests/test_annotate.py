@@ -249,7 +249,7 @@ def test_unknown_section():
     class TestClass:
         """Summary
 
-        Unknown:
+        Un known:
             help1
             help2
         """
@@ -258,4 +258,4 @@ def test_unknown_section():
         envs = {"arg1": 1, "arg2": 2}
 
     annotated = annotate(TestClass)
-    assert annotated["Unknown"] == "help1\nhelp2"
+    assert annotated["Un known"] == "help1\nhelp2"
