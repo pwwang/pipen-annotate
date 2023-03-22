@@ -238,7 +238,7 @@ def test_envs():
     assert parsed["a"]["help"] == "help1"
     assert parsed["a"]["attrs"]["default"] == 1
     assert parsed["b"]["help"] == "help2"
-    assert parsed["b"]["attrs"]["action"] == "namespace"
+    # assert parsed["b"]["attrs"]["action"] == "namespace"
     assert parsed["b"]["terms"]["c"]["help"] == "help3"
     assert parsed["b"]["terms"]["c"]["attrs"]["default"] == 3
     assert parsed["b"]["terms"]["d"]["help"] == ""

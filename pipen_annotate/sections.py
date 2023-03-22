@@ -155,7 +155,7 @@ def _update_attrs_with_cls(
             parsed[key] = Diot(attrs={}, terms={}, help="")
 
         if isinstance(value, dict):
-            parsed[key].attrs.setdefault("action", "namespace")
+            # parsed[key].attrs.setdefault("action", "namespace")
             _update_attrs_with_cls(
                 parsed[key].terms,
                 value,
