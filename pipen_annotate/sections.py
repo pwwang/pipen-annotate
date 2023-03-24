@@ -167,16 +167,6 @@ def _update_attrs_with_cls(
         if "default" not in parsed[key].attrs:
             parsed[key].attrs["default"] = value
 
-        if "atype" not in parsed[key].attrs:
-            if value is not None and not _is_iterable(value):
-                parsed[key].attrs["atype"] = type(value).__name__
-
-        if isinstance(value, list):
-            if "action" not in parsed[key].attrs:
-                parsed[key].attrs["action"] = "clear_extend"
-            if "nargs" not in parsed[key].attrs:
-                parsed[key].attrs["nargs"] = "+"
-
 
 class Section(ABC):
 

@@ -37,7 +37,7 @@ class Process(Proc):
 
 annotated = annotate(Process)
 # prints:
-{'Envs': {'ncores': {'attrs': OrderedDiot([('default', 1), ('atype', 'int')]),
+{'Envs': {'ncores': {'attrs': OrderedDiot([('default', 1)]),
                      'help': 'Number of cores',
                      'terms': OrderedDiot([])}},
  'Input': {'infile': {'attrs': {'action': 'extend',
