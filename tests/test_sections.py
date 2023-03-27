@@ -8,7 +8,6 @@ from pipen_annotate.sections import (
     SectionSummary,
     SectionText,
     MalFormattedAnnotationError,
-    _is_iterable,
 )
 
 
@@ -266,11 +265,3 @@ def test_envs_help_continuing():
 
     assert len(parsed) == 1
     assert parsed["a"]["help"] == "help1\nhelp1 continued"
-
-
-def test_is_iterable():
-    assert _is_iterable(1) is False
-    assert _is_iterable("a") is False
-    assert _is_iterable([1, 2, 3]) is True
-    assert _is_iterable((1, 2, 3)) is True
-    assert _is_iterable({"a": 1, "b": 2}) is True

@@ -1,6 +1,6 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from typing import Any, List, MutableMapping
+from typing import List, MutableMapping
 
 import re
 import textwrap
@@ -32,22 +32,16 @@ class UnknownAnnotationItemWarning(Warning):
     """Raised when the annotation item is unknown"""
 
 
-def _is_iterable(obj: Any) -> bool:
-    """Check if an object is iterable.
-    """
-    try:
-        iter(obj)
-    except TypeError:
-        return False
-    if isinstance(obj, str):
-        return False
-    return True
-
-
 def _dedent(lines: List[str]) -> List[str]:
     """Dedent a list of lines.
     """
     return textwrap.dedent("\n".join(lines)).splitlines()
+
+
+def _end_of_sentence(line: str) -> bool:
+    """Check if a line ends with a sentence.
+    """
+    return line.endswith(".") or line.endswith("?") or line.endswith("!")
 
 
 def _parse_terms(
@@ -114,7 +108,11 @@ def _parse_terms(
             if help_continuing and item.help == "|":
                 sep = item.help = ""
             else:
-                sep = "\n" if help_continuing else " "
+                sep = (
+                    "\n"
+                    if help_continuing or _end_of_sentence(item.help)
+                    else " "
+                )
             item.help = f"{item.help}{sep}{lstripped_line}"
         elif lstripped_line.startswith("- "):
             sublines.append(line)

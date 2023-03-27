@@ -259,3 +259,19 @@ def test_unknown_section():
 
     annotated = annotate(TestClass)
     assert annotated["Un known"] == "help1\nhelp2"
+
+
+def test_help_newline():
+    class TestClass:
+        """Summary
+
+        Envs:
+            arg: help1.
+                help2
+        """
+        input = "infile:file"
+        output = "outfile:file:{{in.infile | basename}}"
+        envs = {"arg": 1}
+
+    annotated = annotate(TestClass)
+    assert annotated.Envs.arg.help == "help1.\nhelp2"
