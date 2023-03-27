@@ -41,7 +41,12 @@ def _dedent(lines: List[str]) -> List[str]:
 def _end_of_sentence(line: str) -> bool:
     """Check if a line ends with a sentence.
     """
-    return line.endswith(".") or line.endswith("?") or line.endswith("!")
+    return (
+        line.endswith(".")
+        or line.endswith("?")
+        or line.endswith("!")
+        or line.endswith(":")
+    )
 
 
 def _parse_terms(
@@ -110,7 +115,13 @@ def _parse_terms(
             else:
                 sep = (
                     "\n"
-                    if help_continuing or _end_of_sentence(item.help)
+                    if help_continuing
+                    or _end_of_sentence(item.help)
+                    or lstripped_line.startswith(">>>")
+                    or (
+                        item.help
+                        and item.help.splitlines()[-1].startswith(">>>")
+                    )
                     else " "
                 )
             item.help = f"{item.help}{sep}{lstripped_line}"

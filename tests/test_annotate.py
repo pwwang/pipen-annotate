@@ -275,3 +275,21 @@ def test_help_newline():
 
     annotated = annotate(TestClass)
     assert annotated.Envs.arg.help == "help1.\nhelp2"
+
+
+def test_code():
+    class TestClass:
+        """Summary
+
+        Envs:
+            arg: help1
+                >>> some code
+                >>> some more code
+                help2
+        """
+        input = "infile:file"
+        output = "outfile:file:{{in.infile | basename}}"
+        envs = {"arg": 1}
+
+    annotated = annotate(TestClass)
+    assert annotated.Envs.arg.help == 'help1\n>>> some code\n>>> some more code\nhelp2'
