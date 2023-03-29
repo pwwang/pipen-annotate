@@ -198,7 +198,7 @@ class Section(ABC):
         other: str | List[str] | MutableMapping,
     ) -> str | List[str] | MutableMapping:
         """Update the parsed result with the other result."""
-        if isinstance(other, str):
+        if isinstance(other, str):  # pragma: no cover
             return other
         if isinstance(other, list):
             return base + other

@@ -226,31 +226,31 @@ def test_inherit():
     assert annotated["Envs"]["arg3"]["help"] == "help3"
 
 
-# def test_inherit_no_doc_inherit():
+def test_inherit_no_doc_inherit():
 
-#     class Base(Proc):
-#         """Summary
+    class Base(Proc):
+        """Summary
 
-#         Input:
-#             infile: Input file
+        Input:
+            infile: Input file
 
-#         Output:
-#             outfile: Output file
+        Output:
+            outfile: Output file
 
-#         Envs:
-#             arg1 (type:int): help1
-#             arg2: help2
+        Envs:
+            arg1 (type:int): help1
+            arg2: help2
 
-#         List:
-#             a
-#             b
+        List:
+            a
+            b
 
-#         Dict:
-#             {"a": 1, "b": 2}
-#         """
-#         input = "infile:file"
-#         output = "outfile:file:{{in.infile | basename}}"
-#         envs = {"arg1": 1, "arg2": 2}
+        Dict:
+            {"a": 1, "b": 2}
+        """
+        input = "infile:file"
+        output = "outfile:file:{{in.infile | basename}}"
+        envs = {"arg1": 1, "arg2": 2}
 
     @annotate.no_doc_inherit
     class Inherited2(Base):
@@ -288,6 +288,7 @@ def test_procgroup():
 
 
 def test_unknown_section():
+    @annotate.no_doc_inherit
     class TestClass:
         """Summary
 
