@@ -170,9 +170,6 @@ def test_inherit():
             arg1 (type:int): help1
             arg2: help2
 
-        Text:
-            abc
-
         List:
             a
             b
@@ -205,7 +202,7 @@ def test_inherit():
         """
         envs = {"arg3": 3}
 
-    annotated = annotate(Inherited1, inherit=True)
+    annotated = annotate(Inherited1)
     assert annotated["Text"] == "def"
     assert annotated["List"] == ["a", "b", "c", "d"]
     assert annotated["Dict"] == {"a": 1, "b": 4, "c": 3}
@@ -226,6 +223,51 @@ def test_inherit():
     assert annotated["Envs"]["arg1"]["attrs"]["type"] == "int"
     assert annotated["Envs"]["arg1"]["attrs"]["choices"] is True
     assert annotated["Envs"]["arg2"]["help"] == "help2"
+    assert annotated["Envs"]["arg3"]["help"] == "help3"
+
+
+# def test_inherit_no_doc_inherit():
+
+#     class Base(Proc):
+#         """Summary
+
+#         Input:
+#             infile: Input file
+
+#         Output:
+#             outfile: Output file
+
+#         Envs:
+#             arg1 (type:int): help1
+#             arg2: help2
+
+#         List:
+#             a
+#             b
+
+#         Dict:
+#             {"a": 1, "b": 2}
+#         """
+#         input = "infile:file"
+#         output = "outfile:file:{{in.infile | basename}}"
+#         envs = {"arg1": 1, "arg2": 2}
+
+    @annotate.no_doc_inherit
+    class Inherited2(Base):
+        """Short
+
+        Envs:
+            arg1 (choices): help11
+            arg3: help3
+        """
+        envs = {"arg3": 3}
+
+    annotated = annotate(Inherited2)
+    assert annotated["Summary"]["short"] == "Short"
+    assert annotated["Summary"]["long"].strip() == ""
+    assert annotated["Envs"]["arg1"]["help"] == "help11"
+    assert annotated["Envs"]["arg1"]["attrs"]["choices"] is True
+    assert "type" not in annotated["Envs"]["arg1"]["attrs"]
     assert annotated["Envs"]["arg3"]["help"] == "help3"
 
 

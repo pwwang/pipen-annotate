@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import re
 import textwrap
-from weakref import WeakKeyDictionary
-from typing import Callable, Type, MutableMapping
-from diot import OrderedDiot
+from typing import Any, Callable, Type, MutableMapping
 
+from diot import OrderedDiot
 from pipen import Proc
+
 from .sections import (
     Section,
     SectionSummary,
@@ -35,12 +35,11 @@ SECTION_TYPES: MutableMapping[str, Type[Section]] = {
     "Items": SectionItems,
 }
 
-# Cache annotations
-ANNOTATED: WeakKeyDictionary[Type[Proc], OrderedDiot] = WeakKeyDictionary()
+META_CONTAINER = "__meta__"
 
 
 def _annotate_uninherited(cls: Type[Proc]) -> OrderedDiot:
-    """Annotate a Proc class with docstring, without inheriting.
+    """Annotate a Proc class with docstring, without inheriting from base.
 
     Args:
         cls: The class to be annotated.
@@ -48,57 +47,52 @@ def _annotate_uninherited(cls: Type[Proc]) -> OrderedDiot:
     Returns:
         The annotated dict.
     """
-    if cls not in ANNOTATED:
-        annotated = OrderedDiot()
-        docstring = cls.__doc__
+    annotated = OrderedDiot()
+    docstring = cls.__doc__
 
-        if not docstring:
-            ANNOTATED[cls] = annotated
+    if docstring:
+        if docstring[0] in (" ", "\t"):
+            docstring = textwrap.dedent(docstring)
         else:
-            if docstring[0] in (" ", "\t"):
-                docstring = textwrap.dedent(docstring)
+            parts = docstring.split("\n", 1)
+            if len(parts) == 1:
+                first, rest = parts[0], ""
             else:
-                parts = docstring.split("\n", 1)
-                if len(parts) == 1:
-                    first, rest = parts[0], ""
-                else:
-                    first, rest = parts
-                docstring = f"{first}\n{textwrap.dedent(rest)}"
+                first, rest = parts
+            docstring = f"{first}\n{textwrap.dedent(rest)}"
 
-            section_name = "Summary"
-            section = SectionSummary(cls, section_name)
-            for line in docstring.splitlines():
-                line = line.rstrip()
-                if line and line[-1] == ":":
-                    if line[:-1] in SECTION_TYPES:
-                        annotated[section_name] = section.parse()
-                        section_name = line[:-1]
-                        section = SECTION_TYPES[section_name](
-                            cls,
-                            section_name,
-                        )
-                    elif re.sub(r"(?!^) ", "", line[:-1]).isidentifier():
-                        annotated[section_name] = section.parse()
-                        section_name = line[:-1]
-                        section = SectionText(cls, section_name)
-                    else:
-                        section.consume(line)
+        section_name = "Summary"
+        section = SectionSummary(cls, section_name)
+        for line in docstring.splitlines():
+            line = line.rstrip()
+            if line and line[-1] == ":":
+                if line[:-1] in SECTION_TYPES:
+                    annotated[section_name] = section.parse()
+                    section_name = line[:-1]
+                    section = SECTION_TYPES[section_name](
+                        cls,
+                        section_name,
+                    )
+                elif re.sub(r"(?!^) ", "", line[:-1]).isidentifier():
+                    annotated[section_name] = section.parse()
+                    section_name = line[:-1]
+                    section = SectionText(cls, section_name)
                 else:
                     section.consume(line)
+            else:
+                section.consume(line)
 
-            annotated[section_name] = section.parse()
+        annotated[section_name] = section.parse()
 
-            if issubclass(cls, Proc):
-                if "Input" not in annotated:
-                    annotated.Input = SectionInput(cls, "Input").parse()
-                if "Output" not in annotated:
-                    annotated.Output = SectionOutput(cls, "Output").parse()
-                if "Envs" not in annotated:
-                    annotated.Envs = SectionEnvs(cls, "Envs").parse()
+        if issubclass(cls, Proc):
+            if "Input" not in annotated:
+                annotated.Input = SectionInput(cls, "Input").parse()
+            if "Output" not in annotated:
+                annotated.Output = SectionOutput(cls, "Output").parse()
+            if "Envs" not in annotated:
+                annotated.Envs = SectionEnvs(cls, "Envs").parse()
 
-            ANNOTATED[cls] = annotated
-
-    return ANNOTATED[cls]
+    return annotated
 
 
 def _update_annotation(base: OrderedDiot, other: OrderedDiot) -> OrderedDiot:
@@ -106,35 +100,46 @@ def _update_annotation(base: OrderedDiot, other: OrderedDiot) -> OrderedDiot:
     base = base.copy()
     for key, value in other.items():
         section_class = SECTION_TYPES[key]
-        base[key] = section_class.update_parsed(base[key], value)
+        if key not in base:
+            base[key] = value
+        else:
+            base[key] = section_class.update_parsed(base[key], value)
     return base
 
 
-def annotate(
-    cls: Type[Proc],
-    inherit: bool = False,
-) -> OrderedDiot:
+def annotate(cls: Type[Any]) -> OrderedDiot:
     """Annotate a Proc class with docstring.
 
     Args:
         cls: The class to be annotated.
-        inherit: Whether to inherit the annotations from the parent class.
 
     Returns:
         The annotated dict.
     """
-    base = [
-        mro
-        for mro in cls.__mro__
-        if issubclass(mro, Proc) and mro is not Proc and mro is not cls
-    ]
-    annotated = _annotate_uninherited(cls)
-    if not inherit or not base:
-        return annotated
+    if not getattr(cls, META_CONTAINER, None):
+        setattr(cls, META_CONTAINER, {})
 
-    base = base[0]
-    base_annotated = annotate(base, inherit=inherit)
-    return _update_annotation(base_annotated, annotated)
+    meta = getattr(cls, META_CONTAINER)
+
+    if not meta.get("annotate_annotated", False):
+        base = [
+            mro
+            for mro in cls.__mro__
+            if issubclass(mro, Proc) and mro is not Proc and mro is not cls
+        ]
+        annotated = _annotate_uninherited(cls)
+        if (
+            not meta.get("annotate_doc_inherit", True)
+            or not base
+        ):
+            meta["annotate_annotated"] = annotated
+        else:
+            meta["annotate_annotated"] = _update_annotation(
+                annotate(base[0]),
+                annotated,
+            )
+
+    return meta["annotate_annotated"]
 
 
 def _register_section(
@@ -180,5 +185,15 @@ def _unregister_section(section: str) -> None:
     SECTION_TYPES.pop(section, None)
 
 
+def _no_doc_inherit(proc: Type[Proc]) -> Type[Proc]:
+    """A decorator to disable docstring inheritance for a Proc class"""
+    if not hasattr(proc, META_CONTAINER):
+        setattr(proc, META_CONTAINER, {})
+
+    getattr(proc, META_CONTAINER)["annotate_doc_inherit"] = False
+    return proc
+
+
 annotate.register_section = _register_section
 annotate.unregister_section = _unregister_section
+annotate.no_doc_inherit = _no_doc_inherit
