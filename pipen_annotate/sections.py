@@ -171,7 +171,7 @@ def _update_attrs_with_cls(
                 prev_key=whole_key,
                 cls_name=cls_name,
             )
-            continue
+            # continue
 
         if "default" not in parsed[key].attrs:
             parsed[key].attrs["default"] = value
