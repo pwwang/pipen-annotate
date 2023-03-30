@@ -84,13 +84,13 @@ def _annotate_uninherited(cls: Type[Proc]) -> OrderedDiot:
 
         annotated[section_name] = section.parse()
 
-        if issubclass(cls, Proc):
-            if "Input" not in annotated:
-                annotated.Input = SectionInput(cls, "Input").parse()
-            if "Output" not in annotated:
-                annotated.Output = SectionOutput(cls, "Output").parse()
-            if "Envs" not in annotated:
-                annotated.Envs = SectionEnvs(cls, "Envs").parse()
+    if issubclass(cls, Proc):
+        if "Input" not in annotated:
+            annotated.Input = SectionInput(cls, "Input").parse()
+        if "Output" not in annotated:
+            annotated.Output = SectionOutput(cls, "Output").parse()
+        if "Envs" not in annotated:
+            annotated.Envs = SectionEnvs(cls, "Envs").parse()
 
     return annotated
 
