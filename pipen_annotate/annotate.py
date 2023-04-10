@@ -99,8 +99,8 @@ def _update_annotation(base: OrderedDiot, other: OrderedDiot) -> OrderedDiot:
     """Update the annotation with another annotation."""
     base = base.copy()
     for key, value in other.items():
-        section_class = SECTION_TYPES[key]
-        if key not in base:
+        section_class = SECTION_TYPES.get(key)
+        if key not in base or section_class is None:
             base[key] = value
         else:
             base[key] = section_class.update_parsed(base[key], value)
