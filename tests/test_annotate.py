@@ -55,6 +55,16 @@ def test_annotate_with_no_docstring():
 
     assert annotate(TestClass) == {}
 
+    class TestClass2(Proc):
+        ...
+
+    anno = annotate(TestClass2)
+    assert anno["Summary"]["short"] == ""
+    assert anno["Summary"]["long"] == ""
+    assert anno["Input"] == {}
+    assert anno["Output"] == {}
+    assert anno["Envs"] == {}
+
 
 def test_annotate_with_leading_space():
 

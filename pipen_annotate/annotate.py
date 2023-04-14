@@ -85,6 +85,8 @@ def _annotate_uninherited(cls: Type[Proc]) -> OrderedDiot:
         annotated[section_name] = section.parse()
 
     if issubclass(cls, Proc):
+        if "Summary" not in annotated:
+            annotated.Summary = SectionSummary(cls, "Summary").parse()
         if "Input" not in annotated:
             annotated.Input = SectionInput(cls, "Input").parse()
         if "Output" not in annotated:

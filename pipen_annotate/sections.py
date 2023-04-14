@@ -213,10 +213,11 @@ class SectionSummary(Section):
     def parse(self) -> str | Diot | List[str]:
         """Parse the summary section."""
         lines = self._lines
-        if lines[0] and lines[0][0] in (" ", "\t"):
-            lines = _dedent(self._lines)
-        else:
-            lines = [lines[0]] + _dedent(lines[1:])
+        if lines:
+            if lines[0] and lines[0][0] in (" ", "\t"):
+                lines = _dedent(self._lines)
+            else:
+                lines = [lines[0]] + _dedent(lines[1:])
 
         short = long = ""
         for i, line in enumerate(lines):
