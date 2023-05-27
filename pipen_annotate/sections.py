@@ -1,6 +1,6 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from typing import List, MutableMapping
+from typing import List, Mapping, MutableMapping
 
 import re
 import textwrap
@@ -177,6 +177,21 @@ def _update_attrs_with_cls(
             parsed[key].attrs["default"] = value
 
 
+def _update_terms(base: Mapping, other: Mapping) -> None:
+    """Update the terms of base with the other terms."""
+    base = base.copy()
+    for key, value in other.items():
+        if key not in base:
+            base[key] = value
+        else:
+            if value.help:
+                base[key].help = value.help
+            base[key].attrs.update(value.attrs)
+            _update_terms(base[key].terms, value.terms)
+
+    return base
+
+
 class Section(ABC):
 
     def __init__(self, cls, name) -> None:
@@ -260,19 +275,7 @@ class SectionItems(Section):
         other: str | List[str] | MutableMapping,
     ) -> str | List[str] | MutableMapping:
         """Update the parsed result with the other result."""
-        base = base.copy()
-        # arg, Diot(attrs, terms, help)
-        for key, value in other.items():
-            if key not in base:
-                base[key] = value
-                continue
-
-            base[key].attrs.update(value.attrs)
-            base[key].terms.update(value.terms)
-            if value.help:
-                base[key].help = value.help
-
-        return base
+        return _update_terms(base, other)
 
 
 class SectionInput(SectionItems):
