@@ -262,7 +262,7 @@ def test_inherit_no_doc_inherit():
         output = "outfile:file:{{in.infile | basename}}"
         envs = {"arg1": 1, "arg2": 2}
 
-    @annotate.no_doc_inherit
+    @annotate.no_inherit
     class Inherited2(Base):
         """Short
 
@@ -298,7 +298,7 @@ def test_procgroup():
 
 
 def test_unknown_section():
-    @annotate.no_doc_inherit
+    @annotate.no_inherit
     class TestClass:
         """Summary
 
