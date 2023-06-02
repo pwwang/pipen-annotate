@@ -5,7 +5,7 @@ import textwrap
 from typing import Any, Callable, Type, MutableMapping
 
 from diot import OrderedDiot
-from pipen import Proc
+from pipen import Proc, ProcGroup
 from pipen.utils import mark as proc_mark, get_marked as proc_get_marked
 
 from .sections import (
@@ -15,6 +15,7 @@ from .sections import (
     SectionOutput,
     SectionEnvs,
     SectionItems,
+    SectionProcGroupArgs,
     SectionText,
 )
 
@@ -112,10 +113,13 @@ def _annotate_uninherited(cls: type) -> OrderedDiot:
                 if line[:-1] in SECTION_TYPES:
                     annotated[section_name] = section.parse()
                     section_name = line[:-1]
-                    section = SECTION_TYPES[section_name](
-                        cls,
-                        section_name,
-                    )
+                    if section_name == "Args" and issubclass(cls, ProcGroup):
+                        section = SectionProcGroupArgs(cls, section_name)
+                    else:
+                        section = SECTION_TYPES[section_name](
+                            cls,
+                            section_name,
+                        )
                 elif re.sub(r"(?!^) ", "", line[:-1]).isidentifier():
                     annotated[section_name] = section.parse()
                     section_name = line[:-1]

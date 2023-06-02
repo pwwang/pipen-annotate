@@ -287,14 +287,23 @@ def test_procgroup():
 
         Args:
             arg1:
-            arg2: help2
+            arg2 (ns): help2
+                - subarg1: help21
         """
+        DEFAULTS = {"arg1": 1, "arg2": {"subarg1": 2}}
 
     annotated = annotate(MyGroup)
     assert annotated["Summary"]["short"] == "Summary"
     assert annotated["Summary"]["long"] == ""
     assert annotated["Args"]["arg1"]["help"] == ""
+    assert annotated["Args"]["arg1"]["attrs"]["default"] == 1
     assert annotated["Args"]["arg2"]["help"] == "help2"
+    assert annotated["Args"]["arg2"]["attrs"]["default"] == {"subarg1": 2}
+    assert annotated["Args"]["arg2"]["attrs"]["ns"] is True
+    assert annotated["Args"]["arg2"]["terms"]["subarg1"]["help"] == "help21"
+    assert annotated["Args"]["arg2"]["terms"]["subarg1"]["attrs"][
+        "default"
+    ] == 2
 
 
 def test_unknown_section():

@@ -153,7 +153,6 @@ def _update_attrs_with_cls(
     parsed: Diot,
     envs: dict | None,
     prev_key: str | None = None,
-    cls_name: str | None = None,
 ) -> None:
     """Update the attrs of parsed terms with the class envs."""
     envs = envs or {}
@@ -163,13 +162,17 @@ def _update_attrs_with_cls(
         if key not in parsed:
             parsed[key] = Diot(attrs={}, terms={}, help="")
 
-        if isinstance(value, dict):
-            # parsed[key].attrs.setdefault("action", "namespace")
+        if (
+            parsed[key].attrs.get("ns", False)
+            or parsed[key].attrs.get("namespace", False)
+            or parsed[key].attrs.get("action", "") in ("ns", "namespace")
+            or (isinstance(value, dict) and parsed[key].terms)
+        ):
+            parsed[key].attrs.setdefault("ns", True)
             _update_attrs_with_cls(
                 parsed[key].terms,
                 value,
                 prev_key=whole_key,
-                cls_name=cls_name,
             )
             # continue
 
@@ -364,11 +367,15 @@ class SectionEnvs(SectionItems):
 
     def parse(self) -> str | Diot | List[str]:
         parsed = super().parse()
-        _update_attrs_with_cls(
-            parsed,
-            self._cls.envs,
-            cls_name=self._cls.__name__,
-        )
+        _update_attrs_with_cls(parsed, self._cls.envs)
+        return parsed
+
+
+class SectionProcGroupArgs(SectionItems):
+
+    def parse(self) -> str | Diot | List[str]:
+        parsed = super().parse()
+        _update_attrs_with_cls(parsed, self._cls.DEFAULTS)
         return parsed
 
 
