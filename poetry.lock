@@ -2,14 +2,14 @@
 
 [[package]]
 name = "aiofile"
-version = "3.8.5"
+version = "3.8.7"
 description = "Asynchronous file operations."
 category = "main"
 optional = false
 python-versions = ">=3.7, <4"
 files = [
-    {file = "aiofile-3.8.5-py3-none-any.whl", hash = "sha256:6644b61ab143a8e516920cdb02d5b46f89c0a37ef036417720f653b5ed31a8c9"},
-    {file = "aiofile-3.8.5.tar.gz", hash = "sha256:bb1ca0b2c4ef3b78f5012a2a3919a4151f873b6aabdc73a7b9b8e94edb2e01ae"},
+    {file = "aiofile-3.8.7-py3-none-any.whl", hash = "sha256:4c38991b1227e221296fa05bbc95bffba9c203fef1ce09ad3076cfe7b61842c7"},
+    {file = "aiofile-3.8.7.tar.gz", hash = "sha256:a8f9dec17282b3583337c4ef2d1a67f33072ab80dd03608041ed9e71b88dc521"},
 ]
 
 [package.dependencies]
@@ -241,14 +241,14 @@ toml = ["tomli"]
 
 [[package]]
 name = "diot"
-version = "0.1.7"
+version = "0.1.8"
 description = "Python dictionary with dot notation."
 category = "main"
 optional = false
 python-versions = ">=3.7,<4.0"
 files = [
-    {file = "diot-0.1.7-py3-none-any.whl", hash = "sha256:dc7c087bf58fdf78ea3f4268ea86ad4a870f622e3f2f3474d63b5bcaffd96da5"},
-    {file = "diot-0.1.7.tar.gz", hash = "sha256:76f3622459e4d6cae5368629ff801e6c78631dc2037dce7b848e72cf5e31cded"},
+    {file = "diot-0.1.8-py3-none-any.whl", hash = "sha256:f2d7d2f121e8a60cd06b7d1b476765e25c37002d0db44e0f5ef72dca98d22640"},
+    {file = "diot-0.1.8.tar.gz", hash = "sha256:21408f8a09628bfb8c88791eaab1558a71692adff4e237c96b4b31a54d3cb2f5"},
 ]
 
 [package.dependencies]
