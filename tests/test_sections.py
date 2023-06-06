@@ -56,7 +56,7 @@ def test_section_text():
     section = SectionText(None, "Text")
     section.consume("Text line 1.")
     section.consume("Text line 2.")
-    assert section.parse() == "Text line 1.\nText line 2."
+    assert section.parse().lines == ["Text line 1.", "Text line 2."]
 
 
 def test_section_items():

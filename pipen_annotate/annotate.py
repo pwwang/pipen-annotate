@@ -1,13 +1,15 @@
 from __future__ import annotations
 
-import re
 import textwrap
+from abc import ABC
 from typing import Any, Callable, Type, MutableMapping
 
 from diot import OrderedDiot
+from liquid import Liquid
 from pipen import Proc, ProcGroup
-from pipen.utils import mark as proc_mark, get_marked as proc_get_marked
+from pipen.utils import mark, get_marked
 
+from .utils import indent as indent_text, FORMAT_INDENT, is_section
 from .sections import (
     Section,
     SectionSummary,
@@ -37,50 +39,6 @@ SECTION_TYPES: MutableMapping[str, Type[Section]] = {
     "Items": SectionItems,
 }
 
-META_CONTAINER = "__meta__"
-
-
-def _mark(cls: type, **kwargs) -> type:
-    """Mark a class, not only a Proc
-
-    Args:
-        cls: The class to be marked
-        kwargs: The marks
-
-    Returns:
-        The marked class
-    """
-    if issubclass(cls, Proc):
-        return proc_mark(**kwargs)(cls)
-
-    if not getattr(cls, META_CONTAINER, None):
-        setattr(cls, META_CONTAINER, {})
-
-    meta = getattr(cls, META_CONTAINER)
-    meta.update(kwargs)
-    return cls
-
-
-def _get_marked(cls: type, mark_name: str, default: Any = None) -> Any:
-    """Get the marked value from a class, not only a Proc
-
-    Args:
-        cls: The class to get marked value from
-        mark_name: The mark name
-        default: The default value if not found
-
-    Returns:
-        The marked value
-    """
-    if issubclass(cls, Proc):
-        return proc_get_marked(cls, mark_name, default)
-
-    if not getattr(cls, META_CONTAINER, None):
-        setattr(cls, META_CONTAINER, {})
-
-    meta = getattr(cls, META_CONTAINER)
-    return meta.get(mark_name, default)
-
 
 def _annotate_uninherited(cls: type) -> OrderedDiot:
     """Annotate a Proc class with docstring, without inheriting from base.
@@ -91,7 +49,7 @@ def _annotate_uninherited(cls: type) -> OrderedDiot:
     Returns:
         The annotated dict.
     """
-    annotated = OrderedDiot()
+    annotated = OrderedDiot(diot_nest=False)
     docstring = cls.__doc__
 
     if docstring:
@@ -120,7 +78,7 @@ def _annotate_uninherited(cls: type) -> OrderedDiot:
                             cls,
                             section_name,
                         )
-                elif re.sub(r"(?!^) ", "", line[:-1]).isidentifier():
+                elif is_section(line[:-1]):
                     annotated[section_name] = section.parse()
                     section_name = line[:-1]
                     section = SectionText(cls, section_name)
@@ -141,6 +99,10 @@ def _annotate_uninherited(cls: type) -> OrderedDiot:
         if "Envs" not in annotated:
             annotated.Envs = SectionEnvs(cls, "Envs").parse()
 
+    if issubclass(cls, ProcGroup):
+        if "Args" not in annotated:
+            annotated.Args = SectionProcGroupArgs(cls, "Args").parse()
+
     return annotated
 
 
@@ -150,7 +112,7 @@ def _update_annotation(
 ) -> OrderedDiot:
     """Update the annotation with another annotation."""
     if base is None:
-        base = OrderedDiot()
+        base = OrderedDiot(diot_nest=False)
     else:
         base = base.copy()
 
@@ -173,32 +135,28 @@ def annotate(cls: Type[Any]) -> OrderedDiot:
     Returns:
         The annotated dict.
     """
-    annotated = _get_marked(cls, "annotate_annotated")
-    inherit = _get_marked(cls, "annotate_inherit", True)
+    annotated = get_marked(cls, "annotate_annotated")
+    inherit = get_marked(cls, "annotate_inherit", True)
+    is_proc_or_pg = issubclass(cls, Proc) or issubclass(cls, ProcGroup)
 
-    if not annotated:
+    if not annotated or not is_proc_or_pg:
         annotated = _annotate_uninherited(cls)
-        if issubclass(cls, Proc):
-            base = [
-                mro
-                for mro in cls.__mro__
-                if issubclass(mro, Proc)
+        base = [
+            mro
+            for mro in cls.__mro__
+            if (
+                mro is not cls
+                and mro is not object
                 and mro is not Proc
-                and mro is not cls
-                and mro is not object
-            ]
-        else:
-            base = [
-                mro
-                for mro in cls.__mro__
-                if mro is not cls
-                and mro is not object
-            ]
+                and mro is not ProcGroup
+                and mro is not ABC
+            )
+        ]
 
         base = base[0] if base else None
         annotated_base = annotate(base) if inherit and base else None
         annotated = _update_annotation(annotated_base, annotated)
-        _mark(cls, annotate_annotated=annotated)
+        mark(annotate_annotated=annotated)(cls)
 
     return annotated
 
@@ -246,12 +204,62 @@ def _unregister_section(section: str) -> None:
     SECTION_TYPES.pop(section, None)
 
 
-def _no_doc_inherit(proc: type) -> type:
-    """A decorator to disable docstring inheritance for a class"""
-    _mark(proc, annotate_inherit=False)
-    return proc
+def _format_doc(
+    cls: type | None = None,
+    /,
+    *,
+    base: type | None = None,
+    indent: int | str = 1,
+) -> type | Callable[[type], type]:
+    """Inherit docstring from base class.
+
+    Args:
+        cls: The class to be inherited.
+        base: The base class to inherit from.
+            if None, inherit from the first base class that is not object,
+            Proc, or ProcGroup.
+
+    Returns:
+        When cls is None, return a decorator.
+        When cls is not None, return the class with docstring inherited.
+    """
+    if cls is None:
+        return lambda c: _format_doc(c, base=base)
+
+    if base is None:
+        base = [
+            mro
+            for mro in cls.__mro__
+            if mro is not cls
+            and mro is not object
+            and mro is not Proc
+            and mro is not ProcGroup
+        ]
+
+        base = base[0] if base else None
+
+    if base is None:
+        return cls
+
+    if isinstance(indent, int):
+        indent = FORMAT_INDENT * indent
+
+    docstr = cls.__doc__
+    if docstr is None or not docstr.strip():
+        if not base.__doc__ or not base.__doc__.strip():
+            return cls
+
+        # If the class has no docstring, inherit from base class
+        cls.__doc__ = indent_text(base.__doc__, indent)
+        return cls
+
+    base_annotated = annotate(base)
+    docstr = Liquid(docstr, from_file=False).render(base=base_annotated)
+    cls.__doc__ = indent_text(docstr, indent)
+
+    return cls
 
 
 annotate.register_section = _register_section
 annotate.unregister_section = _unregister_section
-annotate.no_inherit = _no_doc_inherit
+annotate.format_doc = _format_doc

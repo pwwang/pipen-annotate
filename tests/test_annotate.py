@@ -2,9 +2,10 @@ import pytest  # noqa: F401
 
 import json
 from pipen import Proc, ProcGroup
+from pipen.utils import mark
 from pipen_annotate import annotate
 from pipen_annotate.annotate import SECTION_TYPES
-from pipen_annotate.sections import SectionItems, Section, UnknownAnnotationItemWarning, _dedent
+from pipen_annotate.sections import SectionItems, Section, UnknownAnnotationItemWarning, dedent
 
 
 def test_annotate():
@@ -146,7 +147,7 @@ def test_register_section_with_shotcut():
 
     annotated = annotate(TestClass)
 
-    assert annotated["Test"] == "a: help1\nb: help2"
+    assert annotated.Test.lines == ["a: help1", "b: help2"]
     annotate.unregister_section("Test")
 
 
@@ -158,7 +159,7 @@ def test_register_section_with_invalid_type():
 def test_inherit():
     class SectionList(Section):
         def parse(self):
-            return _dedent(self._lines)
+            return dedent(self._lines)
 
     class SectionDict(Section):
         def parse(self):
@@ -213,7 +214,7 @@ def test_inherit():
         envs = {"arg3": 3}
 
     annotated = annotate(Inherited1)
-    assert annotated["Text"] == "def"
+    assert annotated["Text"].lines == ["def"]
     assert annotated["List"] == ["a", "b", "c", "d"]
     assert annotated["Dict"] == {"a": 1, "b": 4, "c": 3}
     assert annotated["Summary"]["short"] == "Short"
@@ -262,7 +263,7 @@ def test_inherit_no_doc_inherit():
         output = "outfile:file:{{in.infile | basename}}"
         envs = {"arg1": 1, "arg2": 2}
 
-    @annotate.no_inherit
+    @mark(annotate_inherit=False)
     class Inherited2(Base):
         """Short
 
@@ -305,9 +306,17 @@ def test_procgroup():
         "default"
     ] == 2
 
+    class MyGroup2(ProcGroup):
+        """Summary"""
+
+    annotated = annotate(MyGroup2)
+    assert annotated["Summary"]["short"] == "Summary"
+    assert annotated["Summary"]["long"] == ""
+    assert annotated["Args"] == {}
+
 
 def test_unknown_section():
-    @annotate.no_inherit
+    @mark(annotate_inherit=False)
     class TestClass:
         """Summary
 
@@ -320,7 +329,7 @@ def test_unknown_section():
         envs = {"arg1": 1, "arg2": 2}
 
     annotated = annotate(TestClass)
-    assert annotated["Un known"] == "help1\nhelp2"
+    assert annotated["Un known"].lines == ["help1", "help2"]
 
 
 def test_help_newline():
@@ -355,3 +364,125 @@ def test_code():
 
     annotated = annotate(TestClass)
     assert annotated.Envs.arg.help == 'help1\n>>> some code\n>>> some more code\nhelp2'
+
+
+def test_format_doc():
+    @annotate.format_doc
+    class K:
+        """Short summary
+
+        Long summary
+
+        Envs:
+            arg1: help11
+                >>> some code
+                >>> some more code
+                help12
+                - subarg1: help111
+                - subarg2: help112
+            arg2 (type=int;required): help21.
+                help22
+
+        Text:
+            A lazy dog jumps over a quick brown fox 1.
+            A lazy dog jumps over a quick brown fox 2.
+        """
+        envs = {"arg": 1, "arg1": {"subarg1": 2, "subarg2": 3}}
+
+    @annotate.format_doc(indent=2)
+    class K2(K):
+        """{{base.Summary}}
+
+        {{* base.Envs }}
+
+        {{* base.Text }}
+        """
+
+    annotated = annotate(K2)
+    assert annotated["Summary"]["short"] == "Short summary"
+    assert annotated["Summary"]["long"] == "Long summary"
+    assert annotated["Envs"]["arg1"]["help"] == 'help11\n>>> some code\n>>> some more code\nhelp12'
+    assert annotated["Envs"]["arg1"]["terms"]["subarg1"]["help"] == "help111"
+    assert annotated["Envs"]["arg1"]["terms"]["subarg2"]["help"] == "help112"
+    assert annotated["Envs"]["arg2"]["help"] == "help21.\nhelp22"
+    assert annotated["Envs"]["arg2"]["attrs"]["type"] == "int"
+    assert annotated["Envs"]["arg2"]["attrs"]["required"] is True
+    assert annotated["Text"].lines == [
+        "A lazy dog jumps over a quick brown fox 1.",
+        "A lazy dog jumps over a quick brown fox 2.",
+    ]
+
+    @annotate.format_doc(indent=2)
+    class K3(K):
+        """{{base.Summary.short}}
+
+        {{base.Summary.long}}
+
+        Envs:
+            {{* base.Envs.arg1 }}
+            {{* base.Envs.arg2 }}
+
+        Text2:
+            {{* base.Text.lines }}
+        """
+
+    annotated = annotate(K3)
+    assert annotated["Summary"]["short"] == "Short summary"
+    assert annotated["Summary"]["long"] == "Long summary"
+    assert annotated["Envs"]["arg1"]["help"] == 'help11\n>>> some code\n>>> some more code\nhelp12'
+    assert annotated["Envs"]["arg1"]["terms"]["subarg1"]["help"] == "help111"
+    assert annotated["Envs"]["arg1"]["terms"]["subarg2"]["help"] == "help112"
+    assert annotated["Envs"]["arg2"]["help"] == "help21.\nhelp22"
+    assert annotated["Envs"]["arg2"]["attrs"]["type"] == "int"
+    assert annotated["Envs"]["arg2"]["attrs"]["required"] is True
+    assert annotated["Text2"].lines == [
+        "A lazy dog jumps over a quick brown fox 1.",
+        "A lazy dog jumps over a quick brown fox 2.",
+    ]
+
+    @annotate.format_doc(indent=2)
+    class K4(K):
+        """{{base.Summary.short}}
+
+        {{base.Summary.long}}
+
+        Envs:
+            arg2 (readonly;{{base.Envs.arg2.attrs}}): {{base.Envs.arg2.help | indent: 16}}
+                more help
+        """
+
+    annotated = annotate(K4)
+    assert annotated["Summary"]["short"] == "Short summary"
+    assert annotated["Summary"]["long"] == "Long summary"
+    assert annotated["Envs"]["arg2"]["help"] == "help21.\nhelp22 more help"
+    assert annotated["Envs"]["arg2"]["attrs"]["type"] == "int"
+    assert annotated["Envs"]["arg2"]["attrs"]["required"] is True
+    assert annotated["Envs"]["arg2"]["attrs"]["readonly"] is True
+
+    @annotate.format_doc(indent=2)
+    class K5(K):
+        """{{base.Summary}}"""
+
+    annotated = annotate(K5)
+    assert annotated["Summary"]["short"] == "Short summary"
+    assert annotated["Summary"]["long"] == "Long summary"
+
+    # Test both None
+    class L:
+        ...
+
+    @annotate.format_doc(indent=2)
+    class L1(L):
+        ...
+
+    assert L1.__doc__ is None
+
+    # Test base not None
+    class M:
+        """Summary"""
+
+    @annotate.format_doc(indent=2)
+    class M1(M):
+        ...
+
+    assert M1.__doc__ == "Summary\n"

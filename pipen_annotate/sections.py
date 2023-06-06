@@ -1,21 +1,18 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
-from typing import List, Mapping, MutableMapping
+from typing import Any, List, Mapping, MutableMapping
 
 import re
-import textwrap
 import warnings
 
 from diot import Diot, OrderedDiot
 from pipen.defaults import ProcInputType
 
-__all__ = (
-    "SectionSummary",
-    "SectionInput",
-    "SectionOutput",
-    "SectionEnvs",
-    "SectionItems",
-    "SectionText",
+from .utils import (
+    FORMAT_INDENT,
+    dedent,
+    end_of_sentence,
+    cleanup_empty_lines,
 )
 
 ITEM_LINE_REGEX = re.compile(
@@ -32,31 +29,132 @@ class UnknownAnnotationItemWarning(Warning):
     """Raised when the annotation item is unknown"""
 
 
-def _dedent(lines: List[str]) -> List[str]:
-    """Dedent a list of lines.
-    """
-    return textwrap.dedent("\n".join(lines)).splitlines()
+class Mixin:
+
+    def _set_meta(self, key: str, value: Any) -> None:
+        self.__diot__[f"_{key}"] = value
+
+    def _get_meta(self, key: str) -> Any:
+        return self.__diot__.get(f"_{key}")
+
+    def __iadd__(self, other: str) -> str:
+        return f"{self}{other}"
 
 
-def _end_of_sentence(line: str) -> bool:
-    """Check if a line ends with a sentence.
-    """
-    return (
-        line.endswith(".")
-        or line.endswith("?")
-        or line.endswith("!")
-        or line.endswith(":")
-    )
+class ItemAttrs(Mixin, OrderedDiot):
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("diot_nest", False)
+        super().__init__(*args, **kwargs)
+        self._set_meta("origin", [])
+
+    def __str__(self) -> str:
+        out = []
+        for key in self._get_meta("origin"):
+            value = self[key]
+            if value is True:
+                out.append(key)
+            else:
+                out.append(f"{key}={value}")
+        return ";".join(out)
+
+
+class ItemTerm(Mixin, Diot):
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("diot_nest", False)
+        super().__init__(*args, **kwargs)
+        self._set_meta("raw_help", [])
+        self._set_meta("prefix", None)
+
+    def __str__(self) -> str:
+        out = self._get_meta("prefix") or ""
+        out += self.name
+        if self.attrs._get_meta("origin"):
+            out += f" ({self.attrs})"
+        out += ":"
+
+        raw_help = self._get_meta("raw_help")
+        if raw_help:
+            out += " " + raw_help[0]
+
+        for line in raw_help[1:]:
+            out += f"\n{FORMAT_INDENT}{line}"
+
+        if self.terms:
+            out += f"\n{self.terms}"
+
+        return out
+
+
+class ItemTerms(Mixin, OrderedDiot):
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("diot_nest", False)
+        super().__init__(*args, **kwargs)
+        self._set_meta("name", None)
+        self._set_meta("level", 0)
+
+    def __str__(self) -> str:
+        name = self._get_meta("name")
+        out = []
+        level = self._get_meta("level")
+        if name:
+            out.append(f"{FORMAT_INDENT * level}{name}:")
+
+        for term in self.values():
+            out.extend(
+                (f"{FORMAT_INDENT * (level + 1)}{line}")
+                for line in str(term).splitlines()
+            )
+        return "\n".join(out)
+
+
+class SummaryParsed(Mixin, Diot):
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("diot_nest", False)
+        super().__init__(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return f"{self.short}\n\n{self.long}"
+
+
+class TextLines(list):
+
+    def __str__(self) -> str:  # pragma: no cover
+        return "\n".join(self)
+
+    # For jinja2/Liquid to work
+    def splitlines(self):
+        return cleanup_empty_lines(self)
+
+
+class TextParsed(Mixin, Diot):
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("diot_nest", False)
+        super().__init__(*args, **kwargs)
+
+    def __str__(self) -> str:
+        name = self._get_meta("name")
+        out = f"{name}:\n" if name else ""
+        out += "\n".join(f"{FORMAT_INDENT}{line}" for line in self.lines)
+        return out
 
 
 def _parse_terms(
     lines: List[str],
     prefix: str | None = None,
-) -> Diot:
+    level: int = 0,
+    name: str | None = None,
+) -> ItemTerms:
     """Parse a list of lines as terms.
     """
-    terms = OrderedDiot()
-    lines = _dedent(lines)
+    terms = ItemTerms()
+    terms._set_meta("name", name)
+    terms._set_meta("level", level)
+    lines = dedent(lines)
     sublines = []
     item = None
     just_matched = False
@@ -71,14 +169,20 @@ def _parse_terms(
         if matched:
             if item:
                 # See if we have sub-terms
-                item.terms = _parse_terms(sublines, prefix="- ")
+                item.terms = _parse_terms(sublines, "- ", level + 1)
                 sublines.clear()
 
             # Create a new item
             name = matched.group("name")
             attrs = matched.group("attrs")
             help = matched.group("help")
-            terms[name] = Diot(attrs={}, terms={}, help="")
+            terms[name] = ItemTerm(
+                name=name,
+                attrs=ItemAttrs(),
+                terms=ItemTerms(),
+                help="",
+            )
+            terms[name]._set_meta("prefix", prefix)
 
             if attrs:
                 for attr in attrs.split(";"):
@@ -92,13 +196,14 @@ def _parse_terms(
                         )
                     attr_name = attr_matched.group("name")
                     attr_value = attr_matched.group("value")
-
+                    terms[name].attrs._get_meta("origin").append(attr_name)
                     terms[name].attrs[attr_name] = (
                         True if attr_value is None else attr_value
                     )
 
             if help is not None:
                 terms[name].help = help.strip()
+                terms[name]._get_meta("raw_help").append(terms[name].help)
                 if terms[name].help == "|":
                     help_continuing = True
 
@@ -116,7 +221,7 @@ def _parse_terms(
                 sep = (
                     "\n"
                     if help_continuing
-                    or _end_of_sentence(item.help)
+                    or end_of_sentence(item.help)
                     or lstripped_line.startswith(">>>")
                     or (
                         item.help
@@ -124,6 +229,7 @@ def _parse_terms(
                     )
                     else " "
                 )
+            item._get_meta("raw_help").append(lstripped_line)
             item.help = f"{item.help}{sep}{lstripped_line}"
         elif lstripped_line.startswith("- "):
             sublines.append(line)
@@ -134,7 +240,7 @@ def _parse_terms(
 
     if item:
         # See if we have sub-terms
-        item.terms = _parse_terms(sublines, prefix="- ")
+        item.terms = _parse_terms(sublines, prefix="- ", level=level + 1)
 
     return terms
 
@@ -160,7 +266,12 @@ def _update_attrs_with_cls(
         whole_key = f"{prev_key}.{key}" if prev_key else key
 
         if key not in parsed:
-            parsed[key] = Diot(attrs={}, terms={}, help="")
+            parsed[key] = ItemTerm(
+                name=key,
+                attrs=ItemAttrs(),
+                terms=ItemTerms(),
+                help="",
+            )
 
         if (
             parsed[key].attrs.get("ns", False)
@@ -206,7 +317,7 @@ class Section(ABC):
         self._lines.append(line)
 
     @abstractmethod
-    def parse(self) -> str | Diot | List[str]:  # pragma: no cover
+    def parse(self) -> Diot:  # pragma: no cover
         pass
 
     @classmethod
@@ -226,16 +337,16 @@ class Section(ABC):
         return base
 
 
-class SectionSummary(Section):
+class SectionSummary(Mixin, Section):
 
-    def parse(self) -> str | Diot | List[str]:
+    def parse(self) -> Diot:
         """Parse the summary section."""
         lines = self._lines
         if lines:
             if lines[0] and lines[0][0] in (" ", "\t"):
-                lines = _dedent(self._lines)
+                lines = dedent(self._lines)
             else:
-                lines = [lines[0]] + _dedent(lines[1:])
+                lines = [lines[0]] + dedent(lines[1:])
 
         short = long = ""
         for i, line in enumerate(lines):
@@ -244,7 +355,7 @@ class SectionSummary(Section):
                 break
             short += line + " "
 
-        return Diot(short=short.rstrip(), long=long)
+        return SummaryParsed(short=short.rstrip(), long=long)
 
     @classmethod
     def update_parsed(
@@ -261,11 +372,11 @@ class SectionSummary(Section):
         return base
 
 
-class SectionItems(Section):
+class SectionItems(Mixin, Section):
 
-    def parse(self) -> str | Diot | List[str]:
+    def parse(self) -> Diot:
         try:
-            return _parse_terms(self._lines)
+            return _parse_terms(self._lines, name=self.name)
         except MalFormattedAnnotationError as e:
             raise MalFormattedAnnotationError(
                 f"[{self._cls.__name__}/{self.name}] {e}"
@@ -283,7 +394,7 @@ class SectionItems(Section):
 
 class SectionInput(SectionItems):
 
-    def parse(self) -> str | Diot | List[str]:
+    def parse(self) -> Diot:
         parsed = super().parse()
         input_keys = self._cls.input
 
@@ -300,9 +411,10 @@ class SectionInput(SectionItems):
             input_key, input_type = input_key_type.split(":", 1)
             input_key_names.add(input_key)
             if input_key not in parsed:
-                parsed[input_key] = Diot(
-                    attrs={"itype": input_type},
-                    terms={},
+                parsed[input_key] = ItemTerm(
+                    name=input_key,
+                    attrs=ItemAttrs(itype=input_type),
+                    terms=ItemTerms(),
                     help="",
                 )
             else:
@@ -326,10 +438,12 @@ class SectionInput(SectionItems):
 
 class SectionOutput(SectionItems):
 
-    def parse(self) -> str | Diot | List[str]:
+    def parse(self) -> Diot:
         output = self._cls.output
         if not output:
-            return Diot()
+            out = ItemTerms()
+            out._set_meta("name", self.name)
+            return out
 
         parsed = super().parse()
 
@@ -344,9 +458,10 @@ class SectionOutput(SectionItems):
 
             out_names.add(parts[0])
             if parts[0] not in parsed:
-                parsed[parts[0]] = Diot(
-                    attrs={"otype": parts[1], "default": parts[2]},
-                    terms={},
+                parsed[parts[0]] = ItemTerm(
+                    name=parts[0],
+                    attrs=ItemAttrs(otype=parts[1], default=parts[2]),
+                    terms=ItemTerms(),
                     help="",
                 )
             else:
@@ -365,7 +480,7 @@ class SectionOutput(SectionItems):
 
 class SectionEnvs(SectionItems):
 
-    def parse(self) -> str | Diot | List[str]:
+    def parse(self) -> Diot:
         parsed = super().parse()
         _update_attrs_with_cls(parsed, self._cls.envs)
         return parsed
@@ -373,7 +488,7 @@ class SectionEnvs(SectionItems):
 
 class SectionProcGroupArgs(SectionItems):
 
-    def parse(self) -> str | Diot | List[str]:
+    def parse(self) -> Diot:
         parsed = super().parse()
         _update_attrs_with_cls(parsed, self._cls.DEFAULTS)
         return parsed
@@ -381,5 +496,9 @@ class SectionProcGroupArgs(SectionItems):
 
 class SectionText(Section):
 
-    def parse(self) -> str | Diot | List[str]:
-        return "\n".join(_dedent(self._lines))
+    def parse(self) -> Diot:
+        lines = dedent(self._lines)
+        lines = cleanup_empty_lines(lines)
+        out = TextParsed(lines=TextLines(lines))
+        out._set_meta("name", self.name)
+        return out
