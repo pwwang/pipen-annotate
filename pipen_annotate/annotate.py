@@ -112,9 +112,9 @@ def _update_annotation(
 ) -> OrderedDiot:
     """Update the annotation with another annotation."""
     if base is None:
-        base = OrderedDiot(diot_nest=False)
-    else:
-        base = base.copy()
+        return other
+
+    base = other.__class__(base, diot_nest=False)
 
     for key, value in other.items():
         section_class = SECTION_TYPES.get(key)
