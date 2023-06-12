@@ -254,7 +254,7 @@ def _format_doc(
         return cls
 
     base_annotated = annotate(base)
-    docstr = Liquid(docstr, from_file=False).render(base=base_annotated)
+    docstr = Liquid(docstr, from_file=False).render(**base_annotated)
     cls.__doc__ = indent_text(docstr, indent)
 
     return cls

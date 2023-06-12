@@ -414,16 +414,16 @@ def test_format_doc():
 
     @annotate.format_doc(indent=2)
     class K3(K):
-        """{{base.Summary.short}}
+        """{{Summary.short}}
 
-        {{base.Summary.long}}
+        {{Summary.long}}
 
         Envs:
-            {{* base.Envs.arg1 }}
-            {{* base.Envs.arg2 }}
+            {{* Envs.arg1 }}
+            {{* Envs.arg2 }}
 
         Text2:
-            {{* base.Text.lines }}
+            {{* Text.lines }}
         """
 
     annotated = annotate(K3)
@@ -442,15 +442,14 @@ def test_format_doc():
 
     @annotate.format_doc(indent=2)
     class K4(K):
-        """{{base.Summary.short}}
-
-        {{base.Summary.long}}
+        """{{Summary}}
 
         Envs:
-            arg2 (readonly;{{base.Envs.arg2.attrs}}): {{base.Envs.arg2.help | indent: 16}}
+            arg2 (readonly;{{Envs.arg2.attrs}}): {{Envs.arg2.help | indent: 16}}
                 more help
         """
 
+    assert K4.__doc__.startswith("Short summary")
     annotated = annotate(K4)
     assert annotated["Summary"]["short"] == "Short summary"
     assert annotated["Summary"]["long"] == "Long summary"
@@ -461,7 +460,7 @@ def test_format_doc():
 
     @annotate.format_doc(indent=2)
     class K5(K):
-        """{{base.Summary}}"""
+        """{{Summary}}"""
 
     annotated = annotate(K5)
     assert annotated["Summary"]["short"] == "Short summary"
