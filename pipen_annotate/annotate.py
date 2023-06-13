@@ -218,6 +218,10 @@ def _format_doc(
         base: The base class to inherit from.
             if None, inherit from the first base class that is not object,
             Proc, or ProcGroup.
+        indent: The indent level of the docstring.
+            Either an integer, indicating the number of `FORMAT_INDENT`
+            (4 spaces by default) to indent, or a string, indicating the string
+            to indent.
 
     Returns:
         When cls is None, return a decorator.
