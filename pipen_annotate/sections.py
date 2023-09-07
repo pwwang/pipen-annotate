@@ -4,6 +4,7 @@ from typing import Any, List, Mapping, MutableMapping
 
 import re
 import warnings
+from copy import deepcopy
 
 from diot import Diot, OrderedDiot
 from pipen.defaults import ProcInputType
@@ -293,7 +294,7 @@ def _update_attrs_with_cls(
 
 def _update_terms(base: Mapping, other: Mapping) -> None:
     """Update the terms of base with the other terms."""
-    base = base.copy()
+    base = deepcopy(base)
     for key, value in other.items():
         if key not in base:
             base[key] = value
@@ -332,7 +333,7 @@ class Section(ABC):
         if isinstance(other, list):
             return base + other
 
-        base = base.copy()
+        base = deepcopy(base)
         base.update(other)
         return base
 
@@ -364,7 +365,7 @@ class SectionSummary(Mixin, Section):
         other: str | List[str] | MutableMapping,
     ) -> str | List[str] | MutableMapping:
         """Update the parsed result with the other result."""
-        base = base.copy()
+        base = deepcopy(base)
         if other.short:
             base.short = other.short
         if other.long:
