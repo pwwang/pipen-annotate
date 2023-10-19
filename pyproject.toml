@@ -11,7 +11,7 @@ generate-setup-file = true
 
 [tool.poetry.dependencies]
 python = "^3.8"
-pipen = "^0.11"
+pipen = "^0.12"
 # diot required by xqute that's required by pipen
 
 [tool.poetry.dev-dependencies]
