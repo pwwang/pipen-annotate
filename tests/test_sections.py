@@ -256,11 +256,11 @@ def test_envs():
     # )
     assert parsed.to_markdown() == """- `a`: *Default: `1`*. <br />
     help1
-- `b`: *Default: `{'c': 3, 'd': 4, 'e': {'f': [6]}}`*. <br />
+- `b`:
     help2
     - `c`: *Default: `3`*. <br />
         help3
-    - `e`: *Default: `{'f': [6]}`*. <br />
+    - `e`:
         help5
         - `f`: *Default: `[6]`*. <br />
             help6
