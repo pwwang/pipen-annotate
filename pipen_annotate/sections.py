@@ -145,7 +145,10 @@ class ItemTerm(Mixin, Diot):
             out += f" {self.attrs.to_markdown(show_hidden)}"
         out += ":"
 
-        if self.attrs.get("default", None) is not None:
+        if (
+            self.attrs.get("default", None) is not None
+            and not self.attrs.get("ns", False)
+        ):
             default = '""' if self.attrs.default == "" else self.attrs.default
             out += f" *Default: `{default}`*. <br />"
 
