@@ -262,8 +262,8 @@ def test_envs():
         help3
     - `e`: *Default: `{'f': [6]}`*. <br />
         help5
-            - `f`: *Default: `[6]`*. <br />
-                help6
+        - `f`: *Default: `[6]`*. <br />
+            help6
     - `d`: *Default: `4`*. <br />"""
 
 

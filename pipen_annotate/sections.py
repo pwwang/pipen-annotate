@@ -187,12 +187,12 @@ class ItemTerms(Mixin, OrderedDiot):
         out = []
         # if name:
         #     out.append(f"{FORMAT_INDENT * level}{name}:")
-
+        indent = "" if level == 0 else FORMAT_INDENT
         for term in self.values():
             if term.attrs.get("hidden", False) and not show_hidden:
                 continue
             out.extend(
-                (f"{FORMAT_INDENT * level}{line}")
+                (f"{indent}{line}")
                 for line in term.to_markdown(show_hidden).splitlines()
             )
         return "\n".join(out)
