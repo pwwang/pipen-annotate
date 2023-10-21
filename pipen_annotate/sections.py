@@ -241,7 +241,7 @@ class TextParsed(Mixin, Diot):
         out += "\n".join(f"{FORMAT_INDENT}{line}" for line in self.lines)
         return out
 
-    def to_markdown(self) -> str:
+    def to_markdown(self, show_hidden: bool = False) -> str:
         lines = _ipython_to_markdown(self.lines)
         return "\n".join(f"{FORMAT_INDENT}{line}" for line in lines)
 
