@@ -41,6 +41,12 @@ class Mixin:
     def __iadd__(self, other: str) -> str:
         return f"{self}{other}"
 
+    def to_markdown(
+        self,
+        show_hidden: bool = False,
+    ) -> str:  # pragma: no cover
+        return str(self)
+
 
 class ItemAttrs(Mixin, OrderedDiot):
 
@@ -58,6 +64,51 @@ class ItemAttrs(Mixin, OrderedDiot):
             else:
                 out.append(f"{key}={value}")
         return ";".join(out)
+
+    def to_markdown(self, show_hidden: bool = False) -> str:
+        out = str(self)
+        return f"*(`{out}`)*" if out else ""
+
+
+def _ipython_to_markdown(lines: List[str]) -> List[str]:
+    """Convert ipython style to markdown style.
+
+    Examples:
+        >>> _ipython_to_markdown([">>> print('hello')"])
+        >>> # ```python\\nprint(\'hello\')\\n```
+        >>> _ipython_to_markdown(["a", ">>> print('hello')", "b"])
+        >>> # a\\n```python\\nprint(\'hello\')\\n```\\nb
+
+    Args:
+        lines: The lines to be converted.
+
+    Returns:
+        The converted lines.
+    """
+    out = []
+    in_code = False
+    for line in lines:
+        if line.startswith(">>> "):
+            if not in_code:
+                out.append("")
+                out.append("```python")
+                in_code = True
+            out.append(line[4:])
+        else:
+            if in_code:
+                out.append("```")
+                out.append("")
+                in_code = False
+
+            if line and line[-1] in (".", "?", ":", "!"):
+                out.append(line + "<br />")
+            else:
+                out.append(line)
+
+    if in_code:
+        out.append("```")
+        out.append("")
+    return out
 
 
 class ItemTerm(Mixin, Diot):
@@ -87,6 +138,27 @@ class ItemTerm(Mixin, Diot):
 
         return out
 
+    def to_markdown(self, show_hidden: bool = False) -> str:
+        out = self._get_meta("prefix") or "- "
+        out += f"`{self.name}`"
+        if self.attrs._get_meta("origin"):
+            out += f" {self.attrs.to_markdown(show_hidden)}"
+        out += ":"
+
+        if self.attrs.get("default", None) is not None:
+            out += f" *Default: `{self.attrs.default}`*. <br />"
+
+        raw_help = self._get_meta("raw_help")
+        if raw_help and raw_help[0] == "|":
+            raw_help = raw_help[1:]
+        for line in _ipython_to_markdown(raw_help):
+            out += f"\n{FORMAT_INDENT}{line}"
+
+        if self.terms:
+            out += f"\n{self.terms.to_markdown(show_hidden)}"
+
+        return out
+
 
 class ItemTerms(Mixin, OrderedDiot):
 
@@ -98,8 +170,8 @@ class ItemTerms(Mixin, OrderedDiot):
 
     def __str__(self) -> str:
         name = self._get_meta("name")
-        out = []
         level = self._get_meta("level")
+        out = []
         if name:
             out.append(f"{FORMAT_INDENT * level}{name}:")
 
@@ -107,6 +179,21 @@ class ItemTerms(Mixin, OrderedDiot):
             out.extend(
                 (f"{FORMAT_INDENT * (level + 1)}{line}")
                 for line in str(term).splitlines()
+            )
+        return "\n".join(out)
+
+    def to_markdown(self, show_hidden: bool = False) -> str:
+        level = self._get_meta("level")
+        out = []
+        # if name:
+        #     out.append(f"{FORMAT_INDENT * level}{name}:")
+
+        for term in self.values():
+            if term.attrs.get("hidden", False) and not show_hidden:
+                continue
+            out.extend(
+                (f"{FORMAT_INDENT * level}{line}")
+                for line in term.to_markdown(show_hidden).splitlines()
             )
         return "\n".join(out)
 
@@ -120,6 +207,10 @@ class SummaryParsed(Mixin, Diot):
     def __str__(self) -> str:
         return f"{self.short}\n\n{self.long}"
 
+    def to_markdown(self, show_hidden: bool = False) -> str:
+        long = "\n".join(_ipython_to_markdown(self.long.splitlines()))
+        return f"{self.short}\n\n{long}"
+
 
 class TextLines(list):
 
@@ -129,6 +220,13 @@ class TextLines(list):
     # For jinja2/Liquid to work
     def splitlines(self):
         return cleanup_empty_lines(self)
+
+    def to_markdown(
+        self,
+        show_hidden: bool = False,
+    ) -> str:  # pragma: no cover
+        out = _ipython_to_markdown(self)
+        return "\n".join(out)
 
 
 class TextParsed(Mixin, Diot):
@@ -142,6 +240,10 @@ class TextParsed(Mixin, Diot):
         out = f"{name}:\n" if name else ""
         out += "\n".join(f"{FORMAT_INDENT}{line}" for line in self.lines)
         return out
+
+    def to_markdown(self) -> str:
+        lines = _ipython_to_markdown(self.lines)
+        return "\n".join(f"{FORMAT_INDENT}{line}" for line in lines)
 
 
 def _parse_terms(
@@ -301,7 +403,15 @@ def _update_terms(base: Mapping, other: Mapping) -> None:
         else:
             if value.help:
                 base[key].help = value.help
+                base[key]._set_meta(
+                    "raw_help",
+                    value._get_meta("raw_help").copy()
+                )
             base[key].attrs.update(value.attrs)
+            origin = base[key].attrs._get_meta("origin")
+            for org in value.attrs._get_meta("origin"):
+                if org not in origin:
+                    origin.append(org)
             _update_terms(base[key].terms, value.terms)
 
     return base

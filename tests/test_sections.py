@@ -8,6 +8,7 @@ from pipen_annotate.sections import (
     SectionSummary,
     SectionText,
     MalFormattedAnnotationError,
+    _ipython_to_markdown,
 )
 
 
@@ -15,6 +16,7 @@ def test_section_summary():
     section = SectionSummary(None, "Summary")
     section.consume("")
     assert section.parse() == {"short": "", "long": ""}
+    assert section.parse().to_markdown() == "\n\n"
 
     section = SectionSummary(None, "Summary")
     section.consume("    Abc")
@@ -56,7 +58,9 @@ def test_section_text():
     section = SectionText(None, "Text")
     section.consume("Text line 1.")
     section.consume("Text line 2.")
-    assert section.parse().lines == ["Text line 1.", "Text line 2."]
+    parsed = section.parse()
+    assert parsed.lines == ["Text line 1.", "Text line 2."]
+    assert parsed.to_markdown() == "    Text line 1.<br />\n    Text line 2.<br />"
 
 
 def test_section_items():
@@ -250,6 +254,17 @@ def test_envs():
     #     parsed["b"]["terms"]["e"]["terms"]["f"]["attrs"]["action"]
     #     == "clear_extend"
     # )
+    assert parsed.to_markdown() == """- `a`: *Default: `1`*. <br />
+    help1
+- `b`: *Default: `{'c': 3, 'd': 4, 'e': {'f': [6]}}`*. <br />
+    help2
+    - `c`: *Default: `3`*. <br />
+        help3
+    - `e`: *Default: `{'f': [6]}`*. <br />
+        help5
+            - `f`: *Default: `[6]`*. <br />
+                help6
+    - `d`: *Default: `4`*. <br />"""
 
 
 def test_envs_help_continuing():
@@ -265,3 +280,35 @@ def test_envs_help_continuing():
 
     assert len(parsed) == 1
     assert parsed["a"]["help"] == "help1\nhelp1 continued"
+    assert parsed.to_markdown() == """- `a`: *Default: `1`*. <br />
+    help1
+    help1 continued"""
+
+
+def test_ipython_to_markdown():
+    lines = [
+        "a",
+        ">>> print(123)",
+        ">>> print(345)",
+        "b.",
+        "c",
+        ">>> print('hello')",
+    ]
+    out = _ipython_to_markdown(lines)
+    assert len(out) == 14
+    assert out == [
+        "a",
+        "",
+        "```python",
+        "print(123)",
+        "print(345)",
+        "```",
+        "",
+        "b.<br />",
+        "c",
+        "",
+        "```python",
+        "print('hello')",
+        "```",
+        "",
+    ]

@@ -199,7 +199,7 @@ def test_inherit():
 
         Envs:
             arg1 (choices): help11
-            arg3: help3
+            arg3 (hidden): help3
 
         Text:
             def
@@ -235,6 +235,10 @@ def test_inherit():
     assert annotated["Envs"]["arg1"]["attrs"]["choices"] is True
     assert annotated["Envs"]["arg2"]["help"] == "help2"
     assert annotated["Envs"]["arg3"]["help"] == "help3"
+    assert annotated.Envs.to_markdown() == """- `arg1` *(`type=int;choices`)*: *Default: `1`*. <br />
+    help11
+- `arg2`: *Default: `2`*. <br />
+    help2"""
 
 
 def test_inherit_no_doc_inherit():
@@ -496,7 +500,6 @@ def test_proc_format_doc():
         """
         envs = {"arg": 1}
 
-
     class P2(P):
         """Short summary2
 
@@ -514,7 +517,6 @@ def test_proc_format_doc():
         Envs:
             arg (readonly): {{Envs.arg.help | indent: 16}}
         """
-
 
     assert P2.__doc__.startswith("Short summary2")
     assert P3.__doc__.startswith("Short summary2")
