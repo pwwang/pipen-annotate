@@ -146,7 +146,8 @@ class ItemTerm(Mixin, Diot):
         out += ":"
 
         if self.attrs.get("default", None) is not None:
-            out += f" *Default: `{self.attrs.default}`*. <br />"
+            default = '""' if self.attrs.default == "" else self.attrs.default
+            out += f" *Default: `{default}`*. <br />"
 
         raw_help = self._get_meta("raw_help")
         if raw_help and raw_help[0] == "|":
