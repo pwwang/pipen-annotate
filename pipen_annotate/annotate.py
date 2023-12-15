@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import textwrap
 from abc import ABC
-from typing import Any, Callable, Type, MutableMapping
+from typing import Any, Callable, Mapping, Type, MutableMapping
 
 from diot import OrderedDiot
 from liquid import Liquid
@@ -210,6 +210,7 @@ def _format_doc(
     *,
     base: type | None = None,
     indent: int | str = 1,
+    vars: Mapping[str, Any] | None = None,
 ) -> type | Callable[[type], type]:
     """Inherit docstring from base class.
 
@@ -222,13 +223,14 @@ def _format_doc(
             Either an integer, indicating the number of `FORMAT_INDENT`
             (4 spaces by default) to indent, or a string, indicating the string
             to indent.
+        vars: The extra variables to be rendered in the docstring.
 
     Returns:
         When cls is None, return a decorator.
         When cls is not None, return the class with docstring inherited.
     """
     if cls is None:
-        return lambda c: _format_doc(c, base=base)
+        return lambda c: _format_doc(c, base=base, indent=indent, vars=vars)
 
     if base is None:
         base = [
@@ -258,7 +260,8 @@ def _format_doc(
         return cls
 
     base_annotated = annotate(base)
-    docstr = Liquid(docstr, from_file=False).render(**base_annotated)
+    vars = vars or {}
+    docstr = Liquid(docstr, from_file=False).render(**base_annotated, **vars)
     cls.__doc__ = indent_text(docstr, indent)
 
     return cls

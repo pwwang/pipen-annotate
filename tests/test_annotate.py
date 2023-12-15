@@ -510,13 +510,17 @@ def test_proc_format_doc():
         """
         envs = {"arg": 1}
 
-    @annotate.format_doc(indent=2)
+    @annotate.format_doc(indent=2, vars={"a": 1})
     class P3(P2):
         """{{Summary}}
 
         Envs:
             arg (readonly): {{Envs.arg.help | indent: 16}}
+
+        Vars:
+            a: {{a}}
         """
 
     assert P2.__doc__.startswith("Short summary2")
     assert P3.__doc__.startswith("Short summary2")
+    assert P3.__doc__.strip().endswith("a: 1")
