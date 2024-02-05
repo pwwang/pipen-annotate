@@ -10,8 +10,8 @@ readme = "README.md"
 generate-setup-file = true
 
 [tool.poetry.dependencies]
-python = "^3.8"
-pipen = "^0.13"
+python = "^3.9"
+pipen = "^0.14"
 
 [tool.poetry.dev-dependencies]
 pytest = "^7"
