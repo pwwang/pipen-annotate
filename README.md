@@ -29,7 +29,7 @@ class Process(Proc):
         outfile: The output file
 
     Envs:
-        ncores: Number of cores
+        ncores (type=int): Number of cores
     """
     input = "infile:file, invar"
     output = "outfile:file:output.txt"
@@ -37,23 +37,25 @@ class Process(Proc):
 
 annotated = annotate(Process)
 # returns:
-{'Envs': {'ncores': {'attrs': OrderedDiot([('default', 1)]),
+{'Envs': {'ncores': {'attrs': {'type': 'int'},
                      'help': 'Number of cores',
-                     'terms': OrderedDiot([])}},
+                     'name': 'ncores',
+                     'terms': {}}},
  'Input': {'infile': {'attrs': {'action': 'extend',
                                 'itype': 'file',
                                 'nargs': '+'},
                       'help': 'An input file',
-                      'terms': OrderedDiot([])},
+                      'name': 'infile',
+                      'terms': {}},
            'invar': {'attrs': {'action': 'extend',
                                'itype': 'var',
                                'nargs': '+'},
                      'help': 'An input variable',
-                     'terms': OrderedDiot([])}},
- 'Output': {'outfile': {'attrs': {'default': 'output.txt',
-                                  'otype': 'file'},
+                     'name': 'invar',
+                     'terms': {}}},
+ 'Output': {'outfile': {'attrs': {'default': 'output.txt', 'otype': 'file'},
                         'help': 'The output file',
-                        'terms': OrderedDiot([])}},
- 'Summary': {'long': 'Long description\n',
-             'short': 'Short description'}}
+                        'name': 'outfile',
+                        'terms': {}}},
+ 'Summary': {'long': 'Long description', 'short': 'Short description'}}
 ```
