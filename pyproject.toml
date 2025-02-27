@@ -11,11 +11,11 @@ generate-setup-file = true
 
 [tool.poetry.dependencies]
 python = "^3.9"
-pipen = "^0.15.0"
+pipen = { version = "^0.16.0a1", allow-prereleases = true }
 
 [tool.poetry.dev-dependencies]
 pytest = "^8"
-pytest-cov = "^5"
+pytest-cov = "^6"
 
 [build-system]
 requires = ["poetry>=1.0"]
