@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pipen-annotate"
-version = "0.15.0a1"
+version = "0.15.0"
 description = "Use docstring to annotate pipen processes"
 authors = ["pwwang <pwwang@pwwang.com>"]
 license = "MIT"
@@ -11,7 +11,7 @@ generate-setup-file = true
 
 [tool.poetry.dependencies]
 python = "^3.9"
-pipen = { version = "^0.16.0a1", allow-prereleases = true }
+pipen = "^0.16.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^8"
