@@ -11,7 +11,7 @@ generate-setup-file = true
 
 [tool.poetry.dependencies]
 python = "^3.9"
-pipen = "0.17.*"
+pipen = "^1.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8"
