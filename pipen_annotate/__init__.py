@@ -1,4 +1,6 @@
-from .annotate import annotate  # noqa: F401
-from .sections import Section  # noqa: F401
+from .annotate import annotate
+from .sections import Section
 
-version = "1.0.2"
+__version__ = version = "1.0.3"
+
+__all__ = ["annotate", "Section", "version", "__version__"]
