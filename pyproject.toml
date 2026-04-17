@@ -1,25 +1,27 @@
-[tool.poetry]
+[project]
 name = "pipen-annotate"
 version = "1.0.2"
 description = "Use docstring to annotate pipen processes"
-authors = ["pwwang <pwwang@pwwang.com>"]
-license = "MIT"
+authors = [{name = "pwwang", email = "pwwang@pwwang.com"}]
+license = {text = "MIT"}
 readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "pipen>=1.0",
+]
 
-[tool.poetry.build]
-generate-setup-file = true
-
-[tool.poetry.dependencies]
-python = "^3.9"
-pipen = {version = "^1.0", allow-prereleases = true}
-
-[tool.poetry.group.dev.dependencies]
-pytest = "^8"
-pytest-cov = "^6"
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "pytest-cov>=6",
+]
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+prerelease = "allow"
 
 [tool.pytest.ini_options]
 addopts = "-vv -p no:asyncio --cov-config=.coveragerc --cov=pipen_annotate --cov-report xml:.coverage.xml --cov-report term-missing"

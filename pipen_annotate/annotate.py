@@ -103,18 +103,21 @@ def _annotate_uninherited(cls: type) -> OrderedDiot:
         if "Args" not in annotated:
             annotated.Args = SectionProcGroupArgs(cls, "Args").parse()
 
-    return annotated
+    return annotated  # type: ignore[return-value]
 
 
 def _update_annotation(
-    base: OrderedDiot | None,
+    base: OrderedDiot | None,  # type: ignore[annotation-unchecked]
     other: OrderedDiot,
 ) -> OrderedDiot:
     """Update the annotation with another annotation."""
     if base is None:
         return other
 
-    base = other.__class__(base, diot_nest=False)
+    base: OrderedDiot = other.__class__(  # type: ignore[assignment]
+        base,
+        diot_nest=False,
+    )
 
     for key, value in other.items():
         section_class = SECTION_TYPES.get(key)
@@ -180,7 +183,7 @@ def _register_section(
     """
     # When used as a decorator
     if section_class is None:
-        return lambda cls: _register_section(section, cls)
+        return lambda cls: _register_section(section, cls)  # type: ignore[return-value]
 
     if isinstance(section_class, str):
         section_class = section_class.title()
@@ -230,10 +233,15 @@ def _format_doc(
         When cls is not None, return the class with docstring inherited.
     """
     if cls is None:
-        return lambda c: _format_doc(c, base=base, indent=indent, vars=vars)
+        return lambda c: _format_doc(  # type: ignore[return-value]
+            c,
+            base=base,
+            indent=indent,
+            vars=vars,
+        )
 
     if base is None:
-        base = [
+        base = [  # type: ignore[assignment]
             mro
             for mro in cls.__mro__
             if mro is not cls
@@ -242,7 +250,7 @@ def _format_doc(
             and mro is not ProcGroup
         ]
 
-        base = base[0] if base else None
+        base = base[0] if base else None  # type: ignore[assignment]
 
     if base is None:
         return cls
@@ -267,6 +275,6 @@ def _format_doc(
     return cls
 
 
-annotate.register_section = _register_section
-annotate.unregister_section = _unregister_section
-annotate.format_doc = _format_doc
+annotate.register_section = _register_section  # type: ignore[attr-defined]
+annotate.unregister_section = _unregister_section  # type: ignore[attr-defined]
+annotate.format_doc = _format_doc  # type: ignore[attr-defined]

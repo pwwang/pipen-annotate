@@ -33,10 +33,10 @@ class UnknownAnnotationItemWarning(Warning):
 class Mixin:
 
     def _set_meta(self, key: str, value: Any) -> None:
-        self.__diot__[f"_{key}"] = value
+        self.__diot__[f"_{key}"] = value  # type: ignore[assignment]
 
     def _get_meta(self, key: str) -> Any:
-        return self.__diot__.get(f"_{key}")
+        return self.__diot__.get(f"_{key}")  # type: ignore[union-attr]
 
     def __iadd__(self, other: str) -> str:
         return f"{self}{other}"
@@ -283,13 +283,13 @@ def _parse_terms(
             name = matched.group("name")
             attrs = matched.group("attrs")
             help = matched.group("help")
-            terms[name] = ItemTerm(
+            terms[name] = ItemTerm(  # type: ignore[assignment]
                 name=name,
                 attrs=ItemAttrs(),
                 terms=ItemTerms(),
                 help="",
             )
-            terms[name]._set_meta("prefix", prefix)
+            terms[name]._set_meta("prefix", prefix)  # type: ignore[assignment]
 
             if attrs:
                 for attr in attrs.split(";"):
@@ -303,18 +303,22 @@ def _parse_terms(
                         )
                     attr_name = attr_matched.group("name")
                     attr_value = attr_matched.group("value")
-                    terms[name].attrs._get_meta("origin").append(attr_name)
-                    terms[name].attrs[attr_name] = (
+                    terms[name].attrs._get_meta(  # type: ignore[assignment]
+                        "origin"
+                    ).append(attr_name)
+                    terms[name].attrs[attr_name] = (  # type: ignore[assignment]
                         True if attr_value is None else attr_value
                     )
 
             if help is not None:
-                terms[name].help = help.strip()
-                terms[name]._get_meta("raw_help").append(terms[name].help)
-                if terms[name].help == "|":
+                terms[name].help = help.strip()  # type: ignore[assignment]
+                terms[name]._get_meta("raw_help").append(  # type: ignore[assignment]
+                    terms[name].help  # type: ignore[assignment]
+                )
+                if terms[name].help == "|":  # type: ignore[assignment]
                     help_continuing = True
 
-            item = terms[name]
+            item = terms[name]  # type: ignore[assignment]
             just_matched = True
         elif item is None:
             raise MalFormattedAnnotationError(
@@ -349,7 +353,7 @@ def _parse_terms(
         # See if we have sub-terms
         item.terms = _parse_terms(sublines, prefix="- ", level=level + 1)
 
-    return terms
+    return terms  # type: ignore[assignment]
 
 
 def _parse_one_output(out: str) -> List[str] | None:
@@ -398,12 +402,12 @@ def _update_attrs_with_cls(
             parsed[key].attrs["default"] = value
 
 
-def _update_terms(base: Mapping, other: Mapping) -> None:
+def _update_terms(base: Mapping, other: Mapping) -> Mapping:
     """Update the terms of base with the other terms."""
     base = deepcopy(base)
     for key, value in other.items():
         if key not in base:
-            base[key] = value
+            base[key] = value  # type: ignore[assignment]
         else:
             if value.help:
                 base[key].help = value.help
@@ -445,10 +449,10 @@ class Section(ABC):
         if isinstance(other, str):  # pragma: no cover
             return other
         if isinstance(other, list):
-            return base + other
+            return base + other  # type: ignore[operator]
 
         base = deepcopy(base)
-        base.update(other)
+        base.update(other)  # type: ignore[union-attr]
         return base
 
 
@@ -480,10 +484,10 @@ class SectionSummary(Mixin, Section):
     ) -> str | List[str] | MutableMapping:
         """Update the parsed result with the other result."""
         base = deepcopy(base)
-        if other.short:
-            base.short = other.short
-        if other.long:
-            base.long = other.long
+        if other.short:  # type: ignore[assignment]
+            base.short = other.short  # type: ignore[assignment]
+        if other.long:  # type: ignore[assignment]
+            base.long = other.long  # type: ignore[assignment]
         return base
 
 
@@ -504,7 +508,7 @@ class SectionItems(Mixin, Section):
         other: str | List[str] | MutableMapping,
     ) -> str | List[str] | MutableMapping:
         """Update the parsed result with the other result."""
-        return _update_terms(base, other)
+        return _update_terms(base, other)  # type: ignore[return-value]
 
 
 class SectionInput(SectionItems):
