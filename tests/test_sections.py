@@ -1,5 +1,6 @@
 import pytest  # noqa: F401
 
+from pipen.exceptions import ProcOutputTypeError
 from pipen_annotate.sections import (
     SectionEnvs,
     SectionInput,
@@ -222,6 +223,72 @@ def test_output_missing():
 
     section = SectionOutput(TestProc, "Output")
     assert section.parse() == {}
+
+
+def test_output_whole_template():
+    class TestProc:
+        output = "{% if True %}outfile1:file:{{a}}, outfile2:dir:{{b}}{% endif %}"
+
+    section = SectionOutput(TestProc, "Output")
+    section.consume("outfile1: help1")
+    section.consume("outfile2: help2")
+
+    parsed = section.parse()
+    assert len(parsed) == 2
+    assert parsed["outfile1"]["help"] == "help1"
+    assert parsed["outfile1"]["attrs"]["otype"] == "file"
+    assert parsed["outfile1"]["attrs"]["default"] == "<templated>"
+    assert parsed["outfile2"]["help"] == "help2"
+    assert parsed["outfile2"]["attrs"]["otype"] == "dir"
+    assert parsed["outfile2"]["attrs"]["default"] == "<templated>"
+
+
+def test_output_list():
+    class TestProc:
+        output = ["outfile1:file:{{a}}", "outfile2:dir:{{b}}"]
+
+    section = SectionOutput(TestProc, "Output")
+    section.consume("outfile1: help1")
+    section.consume("outfile2: help2")
+
+    parsed = section.parse()
+    assert len(parsed) == 2
+    assert parsed["outfile1"]["help"] == "help1"
+    assert parsed["outfile1"]["attrs"]["otype"] == "file"
+    assert parsed["outfile1"]["attrs"]["default"] == "{{a}}"
+    assert parsed["outfile2"]["help"] == "help2"
+    assert parsed["outfile2"]["attrs"]["otype"] == "dir"
+    assert parsed["outfile2"]["attrs"]["default"] == "{{b}}"
+
+
+def test_output_dict():
+    class TestProc:
+        output = {"outfile1:file": "{{a}}", "outfile2:dir": "{{b}}"}
+
+    section = SectionOutput(TestProc, "Output")
+    section.consume("outfile1: help1")
+    section.consume("outfile2: help2")
+
+    parsed = section.parse()
+    assert len(parsed) == 2
+    assert parsed["outfile1"]["help"] == "help1"
+    assert parsed["outfile1"]["attrs"]["otype"] == "file"
+    assert parsed["outfile1"]["attrs"]["default"] == "{{a}}"
+    assert parsed["outfile2"]["help"] == "help2"
+    assert parsed["outfile2"]["attrs"]["otype"] == "dir"
+    assert parsed["outfile2"]["attrs"]["default"] == "{{b}}"
+
+
+def test_output_wrong_type():
+    class TestProc:
+        output = 123
+
+    section = SectionOutput(TestProc, "Output")
+    with pytest.raises(
+        ProcOutputTypeError,
+        match="Invalid output type",
+    ):
+        section.parse()
 
 
 def test_envs():

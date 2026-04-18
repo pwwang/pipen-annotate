@@ -64,3 +64,30 @@ def cleanup_empty_lines(lines: List[str]) -> List[str]:
         out.pop()
 
     return out
+
+
+def strip_template_syntax(s: str) -> str:
+    """Strip all paired '{{'/'}}', '{#'/'#'}', '{%'/'%}' and the content in between."""
+    s = re.sub(r"\{\{.*?\}\}", "", s)
+    s = re.sub(r"\{#.*?#\}", "", s)
+    s = re.sub(r"\{%.*?%\}", "", s)
+    return s.strip()
+
+
+def replace_template_blocks(s: str) -> tuple[str, dict[str, str]]:
+    """Replace all paired '{{'/'}}', '{#'/'#'}', '{%'/'%}' with placeholders
+    and return the mapping."""
+    mapping = {}
+    idx = 0
+
+    def replacer(match):
+        nonlocal idx
+        placeholder = f"<template#{idx}>"
+        mapping[placeholder] = match.group(0)
+        idx += 1
+        return placeholder
+
+    s = re.sub(r"\{\{.*?\}\}", replacer, s)
+    s = re.sub(r"\{#.*?#\}", replacer, s)
+    s = re.sub(r"\{%.*?%\}", replacer, s)
+    return s.strip(), mapping

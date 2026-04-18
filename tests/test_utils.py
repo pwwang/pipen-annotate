@@ -4,6 +4,8 @@ from pipen_annotate.utils import (
     indent,
     end_of_sentence,
     cleanup_empty_lines,
+    strip_template_syntax,
+    replace_template_blocks,
 )
 
 
@@ -52,3 +54,19 @@ def test_cleanup_empty_lines():
 
     lines = cleanup_empty_lines(["Abc", "", "def", "", "", "Ghi"])
     assert lines == ["Abc", "", "def", "", "Ghi"]
+
+
+def test_strip_template_syntax():
+    s = "This is a {{template}} string with {#comments#} and {% blocks %}."
+    assert strip_template_syntax(s) == "This is a  string with  and ."
+
+
+def test_replace_template_blocks():
+    s = "This is a {{template}} string with {#comments#} and {% blocks %}."
+    out, blocks = replace_template_blocks(s)
+    assert out == "This is a <template#0> string with <template#1> and <template#2>."
+    assert blocks == {
+        "<template#0>": "{{template}}",
+        "<template#1>": "{#comments#}",
+        "<template#2>": "{% blocks %}",
+    }

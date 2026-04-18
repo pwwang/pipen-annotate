@@ -8,12 +8,15 @@ from copy import deepcopy
 
 from diot import Diot, OrderedDiot
 from pipen.defaults import ProcInputType
+from pipen.exceptions import ProcOutputTypeError
 
 from .utils import (
     FORMAT_INDENT,
     dedent,
     end_of_sentence,
     cleanup_empty_lines,
+    strip_template_syntax,
+    replace_template_blocks,
 )
 
 ITEM_LINE_REGEX = re.compile(
@@ -565,9 +568,38 @@ class SectionOutput(SectionItems):
             return out
 
         parsed = super().parse()
+        if isinstance(output, str):
+            # Strip all paired '{{'/'}}', '{#'/'#'}', '{%'/'%}' in the output string,
+            # which are used for jinja2/Liquid template syntax
+            output = output.strip()
+            if output.startswith("{"):
+                # It is an entire template string, we can't infer the values
+                output = [
+                    out.strip()
+                    for out in strip_template_syntax(output).split(",")
+                    if out.strip()
+                ]
+            else:
+                # Replace the template blocks in the output string with <template#id>
+                # then split by comma to get the output items
+                # after that we get the values of the template blocks
+                # from the original output string by the id
+                output, blocks = replace_template_blocks(output.strip())
+                output = [out.strip() for out in output.split(",") if out.strip()]
+                for j, out in enumerate(output):
+                    for key, value in blocks.items():
+                        if key in out:
+                            output[j] = out.replace(key, value.strip())
 
-        if not isinstance(output, (list, tuple)):
-            output = [out.strip() for out in output.split(",")]
+        elif isinstance(output, (list, tuple)):
+            output = [out.strip() for out in output]
+        elif isinstance(output, dict):
+            output = [f"{key}:{value}" for key, value in output.items()]
+        else:
+            raise ProcOutputTypeError(
+                f"[{self._cls.__name__}] Invalid output type: {type(output).__name__}"
+                "\nExpecting a string or a list of strings."
+            )
 
         out_names = set()
         for out in output:
@@ -579,13 +611,13 @@ class SectionOutput(SectionItems):
             if parts[0] not in parsed:
                 parsed[parts[0]] = ItemTerm(
                     name=parts[0],
-                    attrs=ItemAttrs(otype=parts[1], default=parts[2]),
+                    attrs=ItemAttrs(otype=parts[1], default=parts[2] or "<templated>"),
                     terms=ItemTerms(),
                     help="",
                 )
             else:
                 parsed[parts[0]].attrs["otype"] = parts[1]
-                parsed[parts[0]].attrs["default"] = parts[2]
+                parsed[parts[0]].attrs["default"] = parts[2] or "<templated>"
 
         if set(parsed) - out_names:
             warnings.warn(
