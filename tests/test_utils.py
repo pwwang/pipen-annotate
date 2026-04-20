@@ -62,11 +62,16 @@ def test_strip_template_syntax():
 
 
 def test_replace_template_blocks():
-    s = "This is a {{template}} string with {#comments#} and {% blocks %}."
+    s = (
+        "outfile:file:"
+        "{{in.sobjfile | stem}}.annotated."
+        "{{- ext0(in.sobjfile) if envs.outtype == 'input' else envs.outtype -}}"
+    )
     out, blocks = replace_template_blocks(s)
-    assert out == "This is a <template#0> string with <template#1> and <template#2>."
+    assert out == "outfile:file:<template#0>.annotated.<template#1>"
     assert blocks == {
-        "<template#0>": "{{template}}",
-        "<template#1>": "{#comments#}",
-        "<template#2>": "{% blocks %}",
+        "<template#0>": "{{in.sobjfile | stem}}",
+        "<template#1>": (
+            "{{- ext0(in.sobjfile) if envs.outtype == 'input' else envs.outtype -}}"
+        ),
     }

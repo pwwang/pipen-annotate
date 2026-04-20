@@ -589,7 +589,7 @@ class SectionOutput(SectionItems):
                 for j, out in enumerate(output):
                     for key, value in blocks.items():
                         if key in out:
-                            output[j] = out.replace(key, value.strip())
+                            output[j] = out = out.replace(key, value.strip())
 
         elif isinstance(output, (list, tuple)):
             output = [out.strip() for out in output]
