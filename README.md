@@ -1,6 +1,7 @@
-# pipen-annotate
-
-Use docstring to annotate [pipen](https://github.com/pwwang/pipen) processes
+<div align="center">
+    <img src="./logo.png" width="240px" alt="pipen-annotate logo">
+    <p style="font-weight:bold">Use docstring to annotate <a href="https://github.com/pwwang/pipen">pipen</a> processes</p>
+</div>
 
 ## Installation
 
